@@ -58,6 +58,12 @@ public final class ProfileRemovePacket extends AbstractPacket {
         if (!ConfigMain.ProfilesEnabled)
             return;
 
+        if (!ConfigMain.PlayerSlotManagement
+            && !CustomNpcsPermissions.hasPermission(player, CustomNpcsPermissions.PROFILE_ADMIN)) {
+            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "Los slots de personaje se cambian desde el sistema de slots del servidor.");
+            return;
+        }
+
         int slot = in.readInt();
         ProfileOperation operation = ProfileController.Instance.removeSlot(player, slot);
         ProfileGetPacket.sendProfileNBT(player);

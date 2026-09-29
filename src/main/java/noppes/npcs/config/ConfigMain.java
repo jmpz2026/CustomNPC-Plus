@@ -95,6 +95,10 @@ public class ConfigMain {
 
     public static int DefaultProfileSlots = 5;
 
+    // Fork: players can only create, remove or switch slots through the GUI if this is true.
+    // Commands and the scripting/Java API are not affected.
+    public static boolean PlayerSlotManagement = false;
+
 
     /**
      * General NPC Properties
@@ -236,6 +240,8 @@ public class ConfigMain {
             }, "List of restricted regions where profile switching is enabled. Format: DIM, X1, Y1, Z1, X2, Y2, Z2");
 
             DefaultProfileSlots = config.get(PROFILES, "Default Profile Slots", 5, "This is the default amount without any permission handling").getInt(5);
+
+            PlayerSlotManagement = config.get(PROFILES, "Player Slot Management", false, "If true, players can create, remove and switch their own slots from the Profiles GUI. If false, only players with customnpcs.profile.admin (or OP) can; the rest must go through commands or the API.").getBoolean(false);
 
             RestrictedProfileRegions.clear();
             for (String region : RestrictedProfileRegionsProperty.getStringList()) {

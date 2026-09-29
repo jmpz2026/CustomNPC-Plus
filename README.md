@@ -1,4 +1,16 @@
 
+## Fork notice (branch `fork-1.10.3`)
+
+This branch is a modified build of CustomNPC+ **1.10.3** (commit `12696996a`, API submodule `305a377`).
+Changes from upstream:
+
+- **Profile slot packets are gated.** `ProfileCreatePacket`, `ProfileChangePacket` and `ProfileRemovePacket`
+  are rejected unless the new config key `Profile > Player Slot Management` is `true` (default `false`) or the
+  player has `customnpcs.profile.admin` / OP. Commands and the scripting/Java API are unchanged. Server-side
+  only: clients keep the stock 1.10.3 jar.
+- **Build tooling only:** `gtnhsettingsconvention` 1.0.27 to 1.0.51 (1.0.27 is no longer published), Gradle wrapper
+  8.9 to 8.14.3, and the dev-only NotEnoughItems runtime dependency 2.5.4 to 2.7.91. None of these reach the jar.
+
 ## 👋 Welcome to the CustomNPC+ Repository.
 ![](images/logo_banner.png)  
 

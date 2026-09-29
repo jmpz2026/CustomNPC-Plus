@@ -52,6 +52,12 @@ public final class ProfileCreatePacket extends AbstractPacket {
         if (!ConfigMain.ProfilesEnabled)
             return;
 
+        if (!ConfigMain.PlayerSlotManagement
+            && !CustomNpcsPermissions.hasPermission(player, CustomNpcsPermissions.PROFILE_ADMIN)) {
+            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "Los slots de personaje se cambian desde el sistema de slots del servidor.");
+            return;
+        }
+
         Profile profile = ProfileController.Instance.getProfile(player);
         ProfileOperation operation = ProfileController.Instance.createSlotInternal(profile);
         ProfileGetPacket.sendProfileNBT(player);
