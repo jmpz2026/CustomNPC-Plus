@@ -93,6 +93,7 @@ public class DialogCommand extends CommandKamkeelBase {
     )
     public void reload(ICommandSender sender, String args[]) {
         new DialogController().load();
+        noppes.npcs.idioma.Traducciones.cargar();
         SyncController.syncAllDialogs();
         sendResult(sender, "Dialogs Reloaded");
     }

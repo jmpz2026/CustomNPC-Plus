@@ -48,8 +48,8 @@ public class PlayerQuestController {
 
             data.activeQuests.put(questData.quest.id, questData);
             if (questData.sendAlerts) {
-                AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.newquest", questData.quest.title);
-                ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.newquest", ": ", questData.quest.title);
+                AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
+                ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
             }
             playerData.updateClient = true;
         } else {
@@ -75,8 +75,8 @@ public class PlayerQuestController {
             }
         }
         if (questData != null && questData.sendAlerts) {
-            AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.completed", questData.quest.title);
-            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.completed", ": ", questData.quest.title);
+            AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.completed", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
+            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.completed", ": ", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
         }
         playerdata.updateClient = true;
     }
@@ -107,8 +107,8 @@ public class PlayerQuestController {
             }
         }
         if (questData != null && questData.sendAlerts) {
-            AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.completed", questData.quest.title);
-            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.completed", ": ", questData.quest.title);
+            AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.completed", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
+            ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.completed", ": ", noppes.npcs.idioma.Traducciones.titulo(player, questData.quest));
         }
         playerdata.updateClient = true;
     }

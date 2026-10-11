@@ -248,9 +248,9 @@ public class NoppesUtilServer {
 
         if (npc instanceof EntityDialogNpc || dia.id < 0) {
             dialog.hideNPC = true;
-            PacketHandler.Instance.sendToPlayer(new DialogPacket(npc.getCommandSenderName(), -1, dialog.writeToNBT(new NBTTagCompound())), (EntityPlayerMP) player);
+            PacketHandler.Instance.sendToPlayer(new DialogPacket(npc.getCommandSenderName(), -1, dialogoTraducido(player, dia, dialog)), (EntityPlayerMP) player);
         } else
-            PacketHandler.Instance.sendToPlayer(new DialogPacket("Real", npc.getEntityId(), dialog.writeToNBT(new NBTTagCompound())), (EntityPlayerMP) player);
+            PacketHandler.Instance.sendToPlayer(new DialogPacket("Real", npc.getEntityId(), dialogoTraducido(player, dia, dialog)), (EntityPlayerMP) player);
 
         dia.factionOptions.addPoints(player);
         if (dialog.hasQuest())
@@ -266,6 +266,13 @@ public class NoppesUtilServer {
             playerdata.updateClient = true;
         }
         setEditingNpc(player, npc);
+    }
+
+    /** El NBT del dialogo en el idioma del jugador (DBR): la huella se toma del original. */
+    private static NBTTagCompound dialogoTraducido(EntityPlayer player, Dialog original, Dialog copia) {
+        NBTTagCompound nbt = copia.writeToNBT(new NBTTagCompound());
+        noppes.npcs.idioma.Traducciones.dialogo(player, original, nbt);
+        return nbt;
     }
 
     public static void runCommand(EntityPlayer player, String name, String command) {

@@ -308,6 +308,7 @@ public class CustomNpcs {
         new BankController();
         DialogController.Instance.load();
         QuestController.Instance.load();
+        noppes.npcs.idioma.Traducciones.cargar();
         ScriptController.HasStart = true;
         ServerCloneController.Instance = new ServerCloneController();
         ServerTagMapController.Instance = new ServerTagMapController();

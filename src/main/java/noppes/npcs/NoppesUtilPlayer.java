@@ -406,7 +406,9 @@ public class NoppesUtilPlayer {
         Quest trackedQuest = (Quest) PlayerData.get(player).questData.getTrackedQuest();
         if (trackedQuest != null) {
             NBTTagCompound compound = new NBTTagCompound();
-            compound.setTag("Quest", trackedQuest.writeToNBT(new NBTTagCompound()));
+            NBTTagCompound questNbt = trackedQuest.writeToNBT(new NBTTagCompound());
+            noppes.npcs.idioma.Traducciones.mision(player, trackedQuest, questNbt);
+            compound.setTag("Quest", questNbt);
             compound.setString("CategoryName", trackedQuest.getCategory().getName());
             if (trackedQuest.completion == EnumQuestCompletion.Instant) {
                 compound.setBoolean("Instant", true);
@@ -427,7 +429,9 @@ public class NoppesUtilPlayer {
         Quest trackedQuest = (Quest) PlayerData.get(player).questData.getTrackedQuest();
         if (trackedQuest != null) {
             NBTTagCompound compound = new NBTTagCompound();
-            compound.setTag("Quest", trackedQuest.writeToNBT(new NBTTagCompound()));
+            NBTTagCompound questNbt = trackedQuest.writeToNBT(new NBTTagCompound());
+            noppes.npcs.idioma.Traducciones.mision(player, trackedQuest, questNbt);
+            compound.setTag("Quest", questNbt);
             compound.setString("CategoryName", trackedQuest.getCategory().getName());
             if (trackedQuest.completion == EnumQuestCompletion.Instant) {
                 compound.setBoolean("Instant", true);

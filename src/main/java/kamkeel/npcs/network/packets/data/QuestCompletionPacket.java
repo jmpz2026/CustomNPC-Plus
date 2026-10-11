@@ -28,6 +28,7 @@ public final class QuestCompletionPacket extends AbstractPacket {
     }
 
     public static void sendQuestComplete(EntityPlayerMP playerMP, NBTTagCompound compound) {
+        noppes.npcs.idioma.Traducciones.mision(playerMP, compound);
         QuestCompletionPacket packet = new QuestCompletionPacket(compound);
         PacketHandler.Instance.sendToPlayer(packet, playerMP);
     }
