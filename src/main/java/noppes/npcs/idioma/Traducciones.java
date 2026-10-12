@@ -57,7 +57,23 @@ public final class Traducciones {
     static final class Archivo {
         Map<String, Entrada> dialogos;
         Map<String, Entrada> misiones;
+        /** Nombres de NPC y de lugares, tal como los escribe el staff (objetivos de mision). */
+        Map<String, String> nombres;
     }
+
+    /**
+     * Frases fijas que CustomNPCs pega a los objetivos, en ingles en el codigo. El castellano
+     * tambien va aqui porque el original es el ingles: el jugador es_* las ve en castellano.
+     */
+    private static final String[][] FIJAS = {
+            // ingles original, es_ES, pt_BR
+            {"Not Found", "No encontrado", "Não encontrado"},
+            {"Found", "Encontrado", "Encontrado"},
+            {" (Done)", " (Hecho)", " (Feito)"},
+            {" (unread)", " (sin leer)", " (não lido)"},
+            {" (read)", " (leído)", " (lido)"},
+            {"Completed: ", "Completado: ", "Concluído: "},
+    };
 
     private static volatile Map<String, Archivo> cargados = Collections.emptyMap();
 
@@ -100,8 +116,8 @@ public final class Traducciones {
 
     // ------------------------------------------------------------------ idioma
 
-    /** en_US, pt_BR, o null si el jugador ve el original (castellano o sin dato). */
-    static String idiomaDe(EntityPlayer p) {
+    /** es_ES, en_US o pt_BR segun el idioma de Minecraft del jugador; null sin dato. */
+    static String idiomaCompleto(EntityPlayer p) {
         if (!(p instanceof EntityPlayerMP)) {
             return null;
         }
@@ -117,9 +133,15 @@ public final class Traducciones {
         }
         String l = t.substring(0, 2).toLowerCase();
         if (l.equals("es")) {
-            return null;
+            return "es_ES";
         }
         return l.equals("pt") ? "pt_BR" : "en_US";
+    }
+
+    /** en_US, pt_BR, o null si el jugador ve el original (castellano o sin dato). */
+    static String idiomaDe(EntityPlayer p) {
+        String i = idiomaCompleto(p);
+        return "es_ES".equals(i) ? null : i;
     }
 
     private static Archivo archivo(EntityPlayer p) {
@@ -257,6 +279,55 @@ public final class Traducciones {
     public static String titulo(EntityPlayer p, Quest q) {
         Entrada e = mision(p, q);
         return e != null && hay(e.titulo) ? e.titulo : q.title;
+    }
+
+    /** Nombre de NPC o de lugar en el idioma del jugador; el original si no hay traduccion. */
+    public static String nombre(EntityPlayer p, String nombre) {
+        Archivo a = archivo(p);
+        if (a == null || a.nombres == null || nombre == null) {
+            return nombre;
+        }
+        String t = a.nombres.get(nombre);
+        return hay(t) ? t : nombre;
+    }
+
+    /**
+     * Una linea de objetivo ya armada por CustomNPCs: "Raditz Corrupto [Jefe]: 0/1",
+     * "Lugar: Found", "Dialogo (read)", "Completed: jugadores". Traduce el nombre del principio
+     * y las frases fijas en ingles del final. Lo que no reconoce lo deja igual.
+     */
+    public static String objetivo(EntityPlayer p, String texto) {
+        String idioma = idiomaCompleto(p);
+        if (texto == null || idioma == null) {
+            return texto;
+        }
+        int col = idioma.equals("es_ES") ? 1 : idioma.equals("pt_BR") ? 2 : 0;
+        String completado = FIJAS[FIJAS.length - 1][0];
+        if (texto.startsWith(completado)) {
+            return FIJAS[FIJAS.length - 1][col] + texto.substring(completado.length());
+        }
+        String cabeza = texto;
+        String cola = "";
+        for (int i = 0; i < FIJAS.length - 1; i++) {
+            if (cabeza.endsWith(FIJAS[i][0])) {
+                cabeza = cabeza.substring(0, cabeza.length() - FIJAS[i][0].length());
+                cola = FIJAS[i][col];
+                break;
+            }
+        }
+        int dos = cabeza.lastIndexOf(": ");
+        String nombre = dos >= 0 ? cabeza.substring(0, dos) : cabeza;
+        String resto = dos >= 0 ? cabeza.substring(dos) : "";
+        return nombre(p, nombre) + resto + cola;
+    }
+
+    /** Las lineas de estado del registro de misiones, una por objetivo. */
+    public static java.util.Vector<String> objetivos(EntityPlayer p, java.util.Vector<String> lineas) {
+        java.util.Vector<String> out = new java.util.Vector<String>(lineas.size());
+        for (String l : lineas) {
+            out.add(objetivo(p, l));
+        }
+        return out;
     }
 
     /** Texto del registro de misiones. */

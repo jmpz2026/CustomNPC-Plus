@@ -1865,6 +1865,10 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
 
     @Override
     public String getCommandSenderName() {
+        // En el cliente, el nombre en el idioma del jugador (sobre la cabeza, en el dialogo).
+        if (worldObj != null && worldObj.isRemote) {
+            return noppes.npcs.idioma.NombresCliente.de(display.name);
+        }
         return display.name;
     }
 

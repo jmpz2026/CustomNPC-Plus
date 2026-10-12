@@ -413,11 +413,11 @@ public class NoppesUtilPlayer {
             if (trackedQuest.completion == EnumQuestCompletion.Instant) {
                 compound.setBoolean("Instant", true);
             } else {
-                compound.setString("TurnInNPC", trackedQuest.getNpcName());
+                compound.setString("TurnInNPC", noppes.npcs.idioma.Traducciones.nombre(player, trackedQuest.getNpcName()));
             }
             NBTTagList nbtTagList = new NBTTagList();
             for (IQuestObjective objective : trackedQuest.questInterface.getObjectives(player)) {
-                nbtTagList.appendTag(new NBTTagString(objective.getText()));
+                nbtTagList.appendTag(new NBTTagString(noppes.npcs.idioma.Traducciones.objetivo(player, objective.getText())));
             }
             compound.setTag("ObjectiveList", nbtTagList);
 
@@ -436,13 +436,13 @@ public class NoppesUtilPlayer {
             if (trackedQuest.completion == EnumQuestCompletion.Instant) {
                 compound.setBoolean("Instant", true);
             } else {
-                compound.setString("TurnInNPC", trackedQuest.getNpcName());
+                compound.setString("TurnInNPC", noppes.npcs.idioma.Traducciones.nombre(player, trackedQuest.getNpcName()));
             }
             NBTTagList nbtTagList = new NBTTagList();
             for (IQuestObjective objective : trackedQuest.questInterface.getPartyObjectives(party)) {
-                nbtTagList.appendTag(new NBTTagString(objective.getText()));
+                nbtTagList.appendTag(new NBTTagString(noppes.npcs.idioma.Traducciones.objetivo(player, objective.getText())));
                 if (objective.getAdditionalText() != null)
-                    nbtTagList.appendTag(new NBTTagString(objective.getAdditionalText()));
+                    nbtTagList.appendTag(new NBTTagString(noppes.npcs.idioma.Traducciones.objetivo(player, objective.getAdditionalText())));
             }
             compound.setTag("ObjectiveList", nbtTagList);
             PacketHandler.Instance.sendToPlayer(new OverlayQuestTrackingPacket(compound), player);

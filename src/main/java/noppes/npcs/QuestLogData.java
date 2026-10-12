@@ -71,9 +71,9 @@ public class QuestLogData {
             String key = category + ":" + quest.title;
             questText.put(key, noppes.npcs.idioma.Traducciones.registro(player, quest));
             questAlerts.put(key, String.valueOf(playerData.questData.activeQuests.get(quest.id).sendAlerts));
-            questStatus.put(key, quest.questInterface.getQuestLogStatus(player));
+            questStatus.put(key, noppes.npcs.idioma.Traducciones.objetivos(player, quest.questInterface.getQuestLogStatus(player)));
             if (quest.completion == EnumQuestCompletion.Npc && quest.questInterface.isCompleted(playerData))
-                finish.put(key, quest.completerNpc);
+                finish.put(key, noppes.npcs.idioma.Traducciones.nombre(player, quest.completerNpc));
 
             if (playerData.questData.getTrackedQuest() != null) {
                 if (quest.id == playerData.questData.getTrackedQuest().getId()) {

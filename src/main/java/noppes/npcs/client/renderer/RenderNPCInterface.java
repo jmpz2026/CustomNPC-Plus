@@ -75,7 +75,7 @@ public class RenderNPCInterface extends RenderLiving {
         if (npc.display.showName()) {
             String s = npc.getCommandSenderName();
             if (!npc.display.title.isEmpty()) {
-                renderLivingLabel(npc, d, d1 + npc.height - 0.06f * scale, d2, 64, "<" + npc.display.title + ">", 0.6f, s, 1f);
+                renderLivingLabel(npc, d, d1 + npc.height - 0.06f * scale, d2, 64, "<" + noppes.npcs.idioma.NombresCliente.de(npc.display.title) + ">", 0.6f, s, 1f);
                 height = 2;
             } else {
                 renderLivingLabel(npc, d, d1 + npc.height - 0.06f * scale, d2, 64, s, 1f);
