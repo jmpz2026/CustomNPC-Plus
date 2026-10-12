@@ -80,7 +80,7 @@ public final class PartySetQuestPacket extends AbstractPacket {
                             playerData.questData.activeQuests.put(questID, questdata);
                         }
                         party.setQuest(foundQuest);
-                        PartyController.Instance().sendQuestChat(party, "party.setChat", " ", foundQuest.title);
+                        PartyController.Instance().sendQuestChat(party, foundQuest, "party.setChat", " ");
                     }
                 }
             }

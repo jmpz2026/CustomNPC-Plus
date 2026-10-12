@@ -324,6 +324,54 @@ public final class Traducciones {
         return null;
     }
 
+    /** Titulo de la mision tal como va en la clave del registro (sin ":"). */
+    public static String tituloClave(EntityPlayer p, Quest q) {
+        String t = titulo(p, q);
+        return t.contains(":") ? q.title : t;
+    }
+
+    /**
+     * Copia de los datos del grupo que se mandan a un miembro, con la mision del grupo en su
+     * idioma: titulo, categoria, clave del registro, objetivos y NPC que la completa. Cada
+     * miembro recibe su propio paquete (PartyDataPacket.sendPartyData), asi que un grupo con
+     * jugadores en idiomas distintos ve cada uno el suyo. La mision se busca por PartyQuestID.
+     */
+    public static NBTTagCompound grupo(EntityPlayer p, NBTTagCompound original) {
+        if (original == null || archivo(p) == null || !original.hasKey("PartyQuestID")) {
+            return original;
+        }
+        Quest q = noppes.npcs.controllers.QuestController.Instance.quests.get(original.getInteger("PartyQuestID"));
+        if (q == null) {
+            return original;
+        }
+        NBTTagCompound c = (NBTTagCompound) original.copy();
+        if (c.hasKey("PartyQuestName") && !c.getString("PartyQuestName").isEmpty()) {
+            c.setString("PartyQuestName", tituloClave(p, q));
+        }
+        if (c.hasKey("QuestName")) {
+            // "categoria:titulo" en los avisos de progreso, solo el titulo en writeToNBT
+            c.setString("QuestName", c.getString("QuestName").contains(":") ? clave(p, q) : tituloClave(p, q));
+        }
+        if (c.hasKey("QuestCategory")) {
+            c.setString("QuestCategory", categoria(p, q.category.title));
+        }
+        if (c.hasKey("QuestNBT")) {
+            mision(p, q, c.getCompoundTag("QuestNBT"));
+        }
+        if (c.hasKey("QuestProgress")) {
+            NBTTagList viejo = c.getTagList("QuestProgress", 8);
+            NBTTagList nuevo = new NBTTagList();
+            for (int i = 0; i < viejo.tagCount(); i++) {
+                nuevo.appendTag(new net.minecraft.nbt.NBTTagString(objetivo(p, viejo.getStringTagAt(i))));
+            }
+            c.setTag("QuestProgress", nuevo);
+        }
+        if (c.hasKey("QuestCompleteWith")) {
+            c.setString("QuestCompleteWith", nombre(p, c.getString("QuestCompleteWith")));
+        }
+        return c;
+    }
+
     /** Nombre de NPC o de lugar en el idioma del jugador; el original si no hay traduccion. */
     public static String nombre(EntityPlayer p, String nombre) {
         Archivo a = archivo(p);

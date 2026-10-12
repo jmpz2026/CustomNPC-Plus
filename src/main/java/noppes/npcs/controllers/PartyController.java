@@ -188,6 +188,7 @@ public class PartyController implements IPartyHandler {
         compound.setInteger("QuestPing", 0);
         if (party.getQuest() != null) {
             Quest quest = (Quest) party.getQuest();
+            compound.setInteger("PartyQuestID", quest.id);   // para traducirla por miembro
             Vector<String> vector = quest.questInterface.getPartyQuestLogStatus(party);
             NBTTagList list = new NBTTagList();
             compound.setString("QuestName", quest.getCategory().getName() + ":" + quest.getName());
@@ -207,6 +208,23 @@ public class PartyController implements IPartyHandler {
                 if (playerData != null) {
                     PartyDataPacket.sendPartyData((EntityPlayerMP) playerMP, compound);
                 }
+            }
+        }
+    }
+
+    /** Aviso de chat con el titulo de la mision en el idioma de cada miembro, al final. */
+    public void sendQuestChat(Party party, Quest quest, String... chatAlerts) {
+        if (party == null)
+            return;
+        for (String name : party.getPlayerNames()) {
+            EntityPlayer playerMP = NoppesUtilServer.getPlayerByName(name);
+            if (playerMP != null) {
+                Object[] args = new Object[3 + chatAlerts.length];
+                args[0] = "§a";
+                System.arraycopy(chatAlerts, 0, args, 1, chatAlerts.length);
+                args[args.length - 2] = noppes.npcs.idioma.Traducciones.titulo(playerMP, quest);
+                args[args.length - 1] = "!";
+                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerMP, args);
             }
         }
     }

@@ -33,7 +33,8 @@ public final class PartyDataPacket extends LargeAbstractPacket {
     }
 
     public static void sendPartyData(EntityPlayerMP playerMP, NBTTagCompound compound) {
-        PartyDataPacket packet = new PartyDataPacket(compound);
+        // cada miembro, la mision del grupo en su idioma
+        PartyDataPacket packet = new PartyDataPacket(noppes.npcs.idioma.Traducciones.grupo(playerMP, compound));
         PacketHandler.Instance.sendToPlayer(packet, playerMP);
     }
 
