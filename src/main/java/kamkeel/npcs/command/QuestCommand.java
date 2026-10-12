@@ -71,8 +71,8 @@ public class QuestCommand extends CommandKamkeelBase {
             playerdata.questData.activeQuests.put(questid, questdata);
             playerdata.save();
             if (playerdata.player != null && questdata.sendAlerts) {
-                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", quest.title);
-                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", quest.title);
+                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
+                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
             }
             playerdata.updateClient = true;
             sendResult(sender, String.format("Started Quest \u00A7e%d\u00A77 for Player '\u00A7b%s\u00A77'", questid, playerdata.playername));
@@ -120,8 +120,8 @@ public class QuestCommand extends CommandKamkeelBase {
 
             playerdata.save();
             if (playerdata.player != null) {
-                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.completed", quest.title);
-                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.completed", ": ", quest.title);
+                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.completed", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
+                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.completed", ": ", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
             }
             playerdata.updateClient = true;
             sendResult(sender, String.format("Finished Quest \u00A7e%d\u00A77 for Player '\u00A7b%s\u00A77'", questid, playerdata.playername));

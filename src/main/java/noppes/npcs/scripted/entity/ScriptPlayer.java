@@ -302,8 +302,8 @@ public class ScriptPlayer<T extends EntityPlayerMP> extends ScriptLivingBase<T> 
         QuestData questdata = new QuestData(quest);
         data.questData.activeQuests.put(id, questdata);
 
-        AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.newquest", quest.title);
-        ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.newquest", ": ", quest.title);
+        AchievementPacket.sendAchievement((EntityPlayerMP) player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(player, quest));
+        ChatAlertPacket.sendChatAlert((EntityPlayerMP) player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(player, quest));
         data.updateClient = true;
     }
 

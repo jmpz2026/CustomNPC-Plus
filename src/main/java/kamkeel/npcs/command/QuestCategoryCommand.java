@@ -104,8 +104,8 @@ public class QuestCategoryCommand extends CommandKamkeelBase {
                 ;
 
                 if (playerdata.player != null) {
-                    AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.completed", quest.title);
-                    ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.completed", ": ", quest.title);
+                    AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.completed", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
+                    ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.completed", ": ", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
                 }
                 count++;
             }
@@ -194,8 +194,8 @@ public class QuestCategoryCommand extends CommandKamkeelBase {
                     count++;
 
                     if (playerdata.player != null && questData.sendAlerts) {
-                        AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", quest.title);
-                        ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", quest.title);
+                        AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
+                        ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
                     }
                 }
             }

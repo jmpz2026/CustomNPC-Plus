@@ -58,8 +58,8 @@ public class CmdQuest extends ChMcLogger {
             playerdata.questData.activeQuests.put(questid, questdata);
             playerdata.save();
             if (playerdata.player != null) {
-                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", quest.title);
-                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", quest.title);
+                AchievementPacket.sendAchievement((EntityPlayerMP) playerdata.player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
+                ChatAlertPacket.sendChatAlert((EntityPlayerMP) playerdata.player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(playerdata.player, quest));
             }
             playerdata.updateClient = true;
         }

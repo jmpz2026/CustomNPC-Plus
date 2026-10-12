@@ -217,8 +217,8 @@ public class PlayerQuestData implements IPlayerQuestData {
         QuestData questdata = new QuestData(quest);
         activeQuests.put(id, questdata);
 
-        AchievementPacket.sendAchievement((EntityPlayerMP) parent.player, false, "quest.newquest", quest.title);
-        ChatAlertPacket.sendChatAlert((EntityPlayerMP) parent.player, "quest.newquest", ": ", quest.title);
+        AchievementPacket.sendAchievement((EntityPlayerMP) parent.player, false, "quest.newquest", noppes.npcs.idioma.Traducciones.titulo(parent.player, quest));
+        ChatAlertPacket.sendChatAlert((EntityPlayerMP) parent.player, "quest.newquest", ": ", noppes.npcs.idioma.Traducciones.titulo(parent.player, quest));
         parent.updateClient = true;
     }
 
