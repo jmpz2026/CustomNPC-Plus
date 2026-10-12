@@ -62,13 +62,15 @@ public class QuestLogData {
         PlayerData playerData = PlayerData.get(player);
 
         for (Quest quest : PlayerQuestController.getActiveQuests(player)) {
-            String category = quest.category.title;
+            // Categoria y titulo en el idioma del jugador: el cliente los muestra y devuelve
+            // la clave al seguir la mision (NoppesUtilPlayer.getQuestFromStringKey la resuelve).
+            String key = noppes.npcs.idioma.Traducciones.clave(player, quest);
+            String category = key.substring(0, key.indexOf(':'));
             if (!categories.containsKey(category))
                 categories.put(category, new Vector<String>());
             Vector<String> list = categories.get(category);
-            list.add(quest.title);
+            list.add(key.substring(key.indexOf(':') + 1));
 
-            String key = category + ":" + quest.title;
             questText.put(key, noppes.npcs.idioma.Traducciones.registro(player, quest));
             questAlerts.put(key, String.valueOf(playerData.questData.activeQuests.get(quest.id).sendAlerts));
             questStatus.put(key, noppes.npcs.idioma.Traducciones.objetivos(player, quest.questInterface.getQuestLogStatus(player)));
@@ -91,7 +93,7 @@ public class QuestLogData {
         if (party != null && party.getQuest() != null) {
             if (playerData.questData.getTrackedQuest() != null) {
                 if (party.getQuest().getId() == playerData.questData.getTrackedQuest().getId()) {
-                    trackedQuestKey = "P" + ":" + party.getQuest().getCategory().getName() + ":" + party.getQuest().getName();
+                    trackedQuestKey = "P" + ":" + noppes.npcs.idioma.Traducciones.clave(player, (Quest) party.getQuest());
                 }
             }
         }
@@ -104,12 +106,12 @@ public class QuestLogData {
         if (party != null && party.getQuest() != null) {
             if (playerData.questData.getTrackedQuest() != null) {
                 if (party.getQuest().getId() == playerData.questData.getTrackedQuest().getId()) {
-                    trackedQuestKey = "P" + ":" + party.getQuest().getCategory().getName() + ":" + party.getQuest().getName();
+                    trackedQuestKey = "P" + ":" + noppes.npcs.idioma.Traducciones.clave(player, (Quest) party.getQuest());
                 }
             }
         } else if (playerData.questData != null && playerData.questData.getTrackedQuest() != null) {
             IQuest quest = playerData.questData.getTrackedQuest();
-            trackedQuestKey = quest.getCategory().getName() + ":" + quest.getName();
+            trackedQuestKey = noppes.npcs.idioma.Traducciones.clave(player, (Quest) quest);
         } else {
             trackedQuestKey = "";
         }

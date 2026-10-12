@@ -59,6 +59,8 @@ public final class Traducciones {
         Map<String, Entrada> misiones;
         /** Nombres de NPC y de lugares, tal como los escribe el staff (objetivos de mision). */
         Map<String, String> nombres;
+        /** Categorias de misiones (registro de misiones). */
+        Map<String, String> categorias;
     }
 
     /**
@@ -279,6 +281,47 @@ public final class Traducciones {
     public static String titulo(EntityPlayer p, Quest q) {
         Entrada e = mision(p, q);
         return e != null && hay(e.titulo) ? e.titulo : q.title;
+    }
+
+    /** Categoria de misiones en el idioma del jugador; la original si no hay traduccion. */
+    public static String categoria(EntityPlayer p, String categoria) {
+        Archivo a = archivo(p);
+        if (a == null || a.categorias == null || categoria == null) {
+            return categoria;
+        }
+        String t = a.categorias.get(categoria);
+        return hay(t) && !t.contains(":") ? t : categoria;
+    }
+
+    /**
+     * Clave "categoria:titulo" de una mision en el registro de misiones, ya traducida. El
+     * cliente la devuelve tal cual al seguir una mision o cambiar sus avisos: se resuelve con
+     * {@link #misionDeClave}.
+     */
+    public static String clave(EntityPlayer p, Quest q) {
+        String t = titulo(p, q);
+        if (t.contains(":")) {
+            t = q.title;   // un ":" en la traduccion romperia la clave
+        }
+        return categoria(p, q.category.title) + ":" + t;
+    }
+
+    /** La mision activa del jugador cuya clave traducida es esa, o null. */
+    public static Quest misionDeClave(EntityPlayer p, String clave) {
+        if (clave == null || archivo(p) == null) {
+            return null;
+        }
+        String sinGrupo = clave.startsWith("P:") ? clave.substring(2) : clave;
+        for (Quest q : noppes.npcs.controllers.PlayerQuestController.getActiveQuests(p)) {
+            if (clave(p, q).equals(sinGrupo)) {
+                return q;
+            }
+        }
+        noppes.npcs.controllers.data.Party grupo = noppes.npcs.controllers.data.PlayerData.get(p).getPlayerParty();
+        if (grupo != null && grupo.getQuest() instanceof Quest && clave(p, (Quest) grupo.getQuest()).equals(sinGrupo)) {
+            return (Quest) grupo.getQuest();
+        }
+        return null;
     }
 
     /** Nombre de NPC o de lugar en el idioma del jugador; el original si no hay traduccion. */

@@ -70,7 +70,8 @@ public class QuestTrackingComponent extends HudComponent {
                     completed = true;
                 }
             } catch (NumberFormatException e) {
-                if (objective.endsWith("(Done)") || objective.endsWith("(read)") || (objective.endsWith("Found") && !objective.endsWith("Not Found"))) {
+                // El servidor traduce estas frases (idioma.Traducciones.FIJAS): se aceptan las tres.
+                if (terminaEnHecho(objective)) {
                     completed = true;
                 }
             }
@@ -86,11 +87,11 @@ public class QuestTrackingComponent extends HudComponent {
         String turnIn = "";
         boolean instantComplete = compound.getBoolean("Instant");
         if (instantComplete) {
-            turnIn = "Completed automatically";
+            turnIn = net.minecraft.util.StatCollector.translateToLocal("quest.autocomplete");
         } else {
             String npcName = compound.getString("TurnInNPC");
             if (!npcName.isEmpty()) {
-                turnIn = "Complete with " + npcName;
+                turnIn = net.minecraft.util.StatCollector.translateToLocalFormatted("quest.completewith", npcName);
             }
         }
         setQuestData(quest, category, objectives, turnIn);
@@ -315,5 +316,28 @@ public class QuestTrackingComponent extends HudComponent {
         if (current.length() > 0)
             lines.add(current.toString());
         return lines;
+    }
+
+    private static final String[] HECHO = {"(Done)", "(Hecho)", "(Feito)", "(read)", "(leído)", "(lido)"};
+    private static final String[] NO_ENCONTRADO = {"Not Found", "No encontrado", "Não encontrado"};
+    private static final String[] ENCONTRADO = {"Found", "Encontrado"};
+
+    private static boolean terminaEnHecho(String objetivo) {
+        for (String h : HECHO) {
+            if (objetivo.endsWith(h)) {
+                return true;
+            }
+        }
+        for (String n : NO_ENCONTRADO) {
+            if (objetivo.endsWith(n)) {
+                return false;
+            }
+        }
+        for (String e : ENCONTRADO) {
+            if (objetivo.endsWith(e)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

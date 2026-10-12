@@ -726,6 +726,7 @@ quest.completed=Quest Complete
 quest.newquest=New Quest
 quest.noquests=You have no active quests
 quest.completewith=Complete with %s
+quest.autocomplete=Completed automatically
 quest.randomitem=Random Item
 quest.exp=Exp
 quest.takeitems=Take Items

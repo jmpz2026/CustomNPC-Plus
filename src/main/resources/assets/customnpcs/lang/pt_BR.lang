@@ -661,6 +661,7 @@ quest.completed=Missão Concluída
 quest.newquest=Nova Missão
 quest.noquests=Você não tem missões ativas
 quest.completewith=Concluir com %s
+quest.autocomplete=Concluída automaticamente
 quest.randomitem=Item Aleatório
 quest.exp=XP
 quest.takeitems=Tirar Itens
