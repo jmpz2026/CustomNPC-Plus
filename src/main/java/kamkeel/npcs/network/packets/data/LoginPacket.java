@@ -14,6 +14,7 @@ import kamkeel.npcs.util.ByteBufUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.config.ConfigMain;
+import noppes.npcs.constants.EnumDialogStyle;
 
 import java.io.IOException;
 import java.util.EnumMap;
@@ -57,6 +58,8 @@ public final class LoginPacket extends AbstractPacket {
             out.writeInt(entry.getKey().ordinal());
             out.writeInt(entry.getValue());
         }
+        // Appended last so a client without this field still reads the rest
+        ByteBufUtils.writeString(out, ConfigMain.ForcedDialogStyle);
     }
 
     @SideOnly(Side.CLIENT)
@@ -75,6 +78,9 @@ public final class LoginPacket extends AbstractPacket {
         }
 
         ClientCacheHandler.setActiveServer(serverKey, serverRevisions);
+        // A server without this field does not force any style
+        ClientCacheHandler.forcedDialogStyle = in.isReadable()
+            ? EnumDialogStyle.fromConfig(ByteBufUtils.readString(in), null) : null;
 
         PacketClient.sendClient(new SyncRevisionInfoPacket(
             serverKey,

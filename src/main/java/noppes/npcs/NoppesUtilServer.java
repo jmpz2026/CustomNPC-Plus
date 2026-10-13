@@ -31,6 +31,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.MobSpawnerBaseLogic;
 import net.minecraft.tileentity.TileEntity;
@@ -43,6 +44,7 @@ import net.minecraft.world.World;
 import noppes.npcs.api.entity.IPlayer;
 import noppes.npcs.config.ConfigMain;
 import noppes.npcs.constants.EnumGuiType;
+import noppes.npcs.constants.EnumOptionType;
 import noppes.npcs.constants.EnumPlayerData;
 import noppes.npcs.constants.EnumRoleType;
 import noppes.npcs.constants.EnumScrollData;
@@ -272,7 +274,25 @@ public class NoppesUtilServer {
     private static NBTTagCompound dialogoTraducido(EntityPlayer player, Dialog original, Dialog copia) {
         NBTTagCompound nbt = copia.writeToNBT(new NBTTagCompound());
         noppes.npcs.idioma.Traducciones.dialogo(player, original, nbt);
+        marcarOpcionesConMision(copia, nbt);
         return nbt;
+    }
+
+    /**
+     * Tells the client which options lead to a dialog with a quest, so the new dialog
+     * style can show a quest icon. Optional key: a client that does not know it ignores it.
+     */
+    private static void marcarOpcionesConMision(Dialog dialog, NBTTagCompound nbt) {
+        NBTTagList options = nbt.getTagList("Options", 10);
+        for (int i = 0; i < options.tagCount(); i++) {
+            NBTTagCompound entry = options.getCompoundTagAt(i);
+            DialogOption option = dialog.options.get(entry.getInteger("OptionSlot"));
+            if (option == null || option.optionType != EnumOptionType.DialogOption)
+                continue;
+            Dialog target = option.getDialog();
+            if (target != null && target.hasQuest())
+                entry.getCompoundTag("Option").setBoolean("HasQuest", true);
+        }
     }
 
     public static void runCommand(EntityPlayer player, String name, String command) {

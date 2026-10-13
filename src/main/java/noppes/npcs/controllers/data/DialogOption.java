@@ -11,6 +11,8 @@ public class DialogOption {
     public EnumOptionType optionType = EnumOptionType.DialogOption;
     public int optionColor = 0xe0e0e0;
     public String command = "";
+    // Client only: the server says the target dialog has a quest. Never written back to disk.
+    public boolean targetHasQuest = false;
 
     public void readNBT(NBTTagCompound compound) {
         if (compound == null)
@@ -20,6 +22,7 @@ public class DialogOption {
         optionColor = compound.getInteger("DialogColor");
         optionType = EnumOptionType.values()[compound.getInteger("OptionType")];
         command = compound.getString("DialogCommand");
+        targetHasQuest = compound.getBoolean("HasQuest");
         if (optionColor == 0) {
             optionColor = 0xe0e0e0;
         }

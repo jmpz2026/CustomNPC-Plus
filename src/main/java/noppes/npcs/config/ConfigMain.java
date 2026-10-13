@@ -84,6 +84,12 @@ public class ConfigMain {
      * Profile Properties
      **/
     public static boolean ProfilesEnabled = true;
+
+    /**
+     * Dialog Properties
+     **/
+    // none, new, classic or modern. Anything but none overrides the style each player picked.
+    public static String ForcedDialogStyle = "none";
     public static boolean AllowProfileBackups = true;
     public static int ProfileBackupAmount = 5;
 
@@ -225,6 +231,8 @@ public class ConfigMain {
             // Update
             TrackedQuestUpdateFrequencyProperty = config.get(UPDATE, "Tracked Quest Update Frequency", 5, "How often in seconds to update a players tracked quest. [Only applies to Item Quest currently]");
             TrackedQuestUpdateFrequency = TrackedQuestUpdateFrequencyProperty.getInt(5);
+
+            ForcedDialogStyle = config.get(GENERAL, "Forced Dialog Style", "none", "Dialog style for every player: none (each player picks), new, classic or modern").getString();
 
             // PROFILES
             ProfilesEnabled = config.get(PROFILES, "Enable Profiles", true, "Allow the use of character Profiles").getBoolean(true);

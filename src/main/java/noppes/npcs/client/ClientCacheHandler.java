@@ -5,6 +5,7 @@ import net.minecraft.util.ResourceLocation;
 import noppes.npcs.client.controllers.MusicController;
 import noppes.npcs.client.gui.customoverlay.OverlayCustom;
 import noppes.npcs.client.gui.hud.ClientHudManager;
+import noppes.npcs.constants.EnumDialogStyle;
 import noppes.npcs.client.gui.hud.EnumHudComponent;
 import noppes.npcs.client.gui.hud.HudComponent;
 import noppes.npcs.client.gui.select.GuiSoundSelection;
@@ -38,6 +39,8 @@ public class ClientCacheHandler {
 
     public static boolean allowProfiles = true;
     public static boolean allowParties = true;
+    // Style the server forces on every player, or null if each player picks
+    public static EnumDialogStyle forcedDialogStyle = null;
 
     public static void setActiveServer(String serverKey, EnumMap<EnumSyncType, Integer> serverRevisions) {
         String normalizedKey = serverKey == null ? "" : serverKey;

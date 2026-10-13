@@ -23,6 +23,7 @@ import noppes.npcs.client.controllers.MusicController;
 import noppes.npcs.client.gui.util.GuiNPCInterface;
 import noppes.npcs.client.gui.util.IGuiClose;
 import noppes.npcs.config.ConfigClient;
+import noppes.npcs.constants.EnumDialogStyle;
 import noppes.npcs.constants.EnumOptionType;
 import noppes.npcs.controllers.data.Dialog;
 import noppes.npcs.controllers.data.DialogImage;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class GuiDialogInteract extends GuiNPCInterface implements IGuiClose {
+public class GuiDialogInteract extends GuiNPCInterface implements IGuiClose, IDialogScreen {
     private GuiScreen parent;
     private Dialog dialog;
     private int selected = 0;
@@ -669,6 +670,12 @@ public class GuiDialogInteract extends GuiNPCInterface implements IGuiClose {
 
     }
 
+    @Override
+    public EnumDialogStyle getDialogStyle() {
+        return EnumDialogStyle.CLASSIC;
+    }
+
+    @Override
     public void appendDialog(Dialog dialog) {
         closeOnEsc = !dialog.disableEsc;
         sentClosePacket = false;
