@@ -210,7 +210,12 @@ public class ConfigClient {
             HideEffectsBarProperty = config.get(VISUAL, "Hide Effects Bar", false, "Hides CNPC+ Inventory Effects Bar");
             HideEffectsBar = HideEffectsBarProperty.getBoolean(false);
 
-            DialogSpeedProperty = config.get(VISUAL, "Dialog Speed", true, "Only set for gradual dialogs");
+            // Antes se declaraba como booleano y siempre guardaba "true": se descarta para recrearla como entero
+            if (config.getCategory(VISUAL).containsKey("Dialog Speed")
+                && config.getCategory(VISUAL).get("Dialog Speed").getType() == Property.Type.BOOLEAN) {
+                config.getCategory(VISUAL).remove("Dialog Speed");
+            }
+            DialogSpeedProperty = config.get(VISUAL, "Dialog Speed", 10, "Only set for gradual dialogs (1-20)");
             DialogSpeed = DialogSpeedProperty.getInt(10);
 
             DialogSoundProperty = config.get(VISUAL, "Dialog Sound", true, "Only for dialogs with sounds");

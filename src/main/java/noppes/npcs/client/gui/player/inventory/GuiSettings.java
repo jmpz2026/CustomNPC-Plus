@@ -167,7 +167,8 @@ public class GuiSettings extends GuiCNPCInventory implements ITextfieldListener,
     public void unFocused(GuiNpcTextField textfield) {
         if (textfield.id == 10) {
             ConfigClient.DialogSpeed = textfield.getInteger();
-            ConfigClient.DialogSpeedProperty.set(ConfigClient.DialogSound);
+            ConfigClient.DialogSpeedProperty.set(ConfigClient.DialogSpeed);
+            ConfigClient.config.save();
         }
     }
 }
