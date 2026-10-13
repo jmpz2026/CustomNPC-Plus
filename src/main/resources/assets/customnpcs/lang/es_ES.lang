@@ -1,6 +1,7 @@
 # es_ES de customnpcs, generado por LANGUAGE UPDATE/tools/lang_terceros.py.
 # No editar a mano: corregir el lote en tools/lotes/cnpcplus-es y volver a aplicar.
 key.customnpcs.special=Tecla especial
+key.customnpcs.dialogHistory=Historial de diálogo
 key.npcInventory=Inventario de NPC
 itemGroup.cnpcs=Herramientas de CustomNpcs
 itemGroup.cnpcsw=Armas de CustomNpcs
@@ -212,6 +213,10 @@ settings.confirmClearTrack=¿Seguro que quieres dejar de seguir la misión?
 settings.clearSkin=Borrar caché de skins
 settings.confirmClearSkin=¿Seguro que quieres borrar la caché de skins?
 settings.hud=Editor del HUD
+dialog.history=Historial
+dialog.history.close=cerrar
+dialog.exit=Salir
+dialog.quest.obtained=Misión obtenida
 scale.shared=Compartido
 filter.contains=Contiene
 filter.any=Cualquiera

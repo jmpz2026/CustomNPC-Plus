@@ -2,6 +2,7 @@ customnpcs.defaultTextColor=404040
 
 key.categories.customnpc=CustomNPC+
 key.customnpcs.special=Special Key
+key.customnpcs.dialogHistory=Dialog History
 key.npcInventory=NPC Inventory
 
 entity.CustomNpc.name=Custom Npc
@@ -241,6 +242,10 @@ settings.confirmClearTrack=Are you sure you want to clear your tracked quest?
 settings.clearSkin=Clear Skin Cache
 settings.confirmClearSkin=Are you sure you want to clear your skin cache?
 settings.hud=Hud Editor
+dialog.history=History
+dialog.history.close=close
+dialog.exit=Exit
+dialog.quest.obtained=Quest received
 
 scale.shared=Shared
 filter.contains=Contains

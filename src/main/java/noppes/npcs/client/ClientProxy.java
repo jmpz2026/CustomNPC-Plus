@@ -222,6 +222,7 @@ import java.util.Random;
 
 public class ClientProxy extends CommonProxy {
     public static KeyBinding NPCButton;
+    public static KeyBinding DialogHistoryKey;
     public static KeyBinding SpecialKey;
     public static final Random RAND = new Random();
     public static FontContainer Font;
@@ -293,6 +294,9 @@ public class ClientProxy extends CommonProxy {
 
         ClientRegistry.registerKeyBinding(NPCButton);
         ClientRegistry.registerKeyBinding(SpecialKey);
+
+        DialogHistoryKey = new KeyBinding("key.customnpcs.dialogHistory", Keyboard.KEY_H, "key.categories.customnpc");
+        ClientRegistry.registerKeyBinding(DialogHistoryKey);
 
         new PresetController(CustomNpcs.Dir);
 

@@ -6,6 +6,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import noppes.npcs.CustomNpcs;
 import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.client.NoppesUtil;
+import noppes.npcs.client.gui.player.cinematic.GuiDialogCinematic;
 import noppes.npcs.client.gui.player.modern.GuiModernDialogInteract;
 import noppes.npcs.client.gui.player.modern.GuiModernQuestDialog;
 import noppes.npcs.config.ConfigClient;
@@ -60,7 +61,10 @@ public final class DialogScreens {
      * classic one there.
      */
     public static void openPreview(GuiScreen parent, EntityNPCInterface npc, Dialog dialog, EntityPlayer player) {
-        NoppesUtil.openGUI(player, new GuiDialogInteract(parent, npc, dialog));
+        if (effectiveStyle() == EnumDialogStyle.NEW)
+            NoppesUtil.openGUI(player, new GuiDialogCinematic(parent, npc, dialog));
+        else
+            NoppesUtil.openGUI(player, new GuiDialogInteract(parent, npc, dialog));
     }
 
     private static GuiScreen create(EnumDialogStyle style, EntityNPCInterface npc, Dialog dialog) {
@@ -70,9 +74,10 @@ public final class DialogScreens {
                     return new GuiModernQuestDialog(npc, dialog.getQuest(), dialog, -2);
                 return new GuiModernDialogInteract(npc, dialog);
             case CLASSIC:
+                return new GuiDialogInteract(npc, dialog);
             case NEW:
             default:
-                return new GuiDialogInteract(npc, dialog);
+                return new GuiDialogCinematic(npc, dialog);
         }
     }
 }
