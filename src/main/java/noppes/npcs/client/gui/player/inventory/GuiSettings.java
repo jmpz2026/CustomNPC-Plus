@@ -40,17 +40,7 @@ public class GuiSettings extends GuiCNPCInventory implements ITextfieldListener,
         this.addLabel(new GuiNpcLabel(90, "settings.hud", guiLeft + 8 + 155, guiTop + 14 + y));
         this.addButton(new GuiNpcButton(90, guiLeft + 107 + 160, guiTop + 9 + y, 45, 20, "gui.edit"));
 
-        y += 22;
-        this.addLabel(new GuiNpcLabel(2, "settings.dialogSound", guiLeft + 8, guiTop + 14 + y));
-        this.addButton(new GuiNpcButton(2, guiLeft + 105, guiTop + 9 + y, 50, 20, new String[]{"gui.no", "gui.yes"}, ConfigClient.DialogSound ? 1 : 0));
-
-        y += 22;
-        this.addLabel(new GuiNpcLabel(10, "settings.dialogSpeed", guiLeft + 8, guiTop + 14 + y));
-        this.addTextField(new GuiNpcTextField(10, this, this.fontRendererObj, guiLeft + 107, guiTop + 9 + y, 45, 20, ConfigClient.DialogSpeed + ""));
-        getTextField(10).integersOnly = true;
-        getTextField(10).setMinMaxDefault(1, 20, 10);
-
-
+        // Dialog sound and speed live in the Dialogs tab (GuiDialogSettings)
         y += 22;
 
         this.addLabel(new GuiNpcLabel(6, "settings.chatAlerts", guiLeft + 8, guiTop + 14 + y));
@@ -118,10 +108,6 @@ public class GuiSettings extends GuiCNPCInventory implements ITextfieldListener,
             ConfigClient.EnableChatBubbles = button.getValue() == 1;
             ConfigClient.EnableChatBubblesProperty.set(ConfigClient.EnableChatBubbles);
         }
-        if (button.id == 2) {
-            ConfigClient.DialogSound = button.getValue() == 1;
-            ConfigClient.DialogSoundProperty.set(ConfigClient.DialogSound);
-        }
         if (button.id == 4) {
             GuiYesNo yesNoTrack = new GuiYesNo(this, "Confirm", StatCollector.translateToLocal("settings.confirmClearTrack"), 0);
             displayGuiScreen(yesNoTrack);
@@ -165,10 +151,5 @@ public class GuiSettings extends GuiCNPCInventory implements ITextfieldListener,
 
     @Override
     public void unFocused(GuiNpcTextField textfield) {
-        if (textfield.id == 10) {
-            ConfigClient.DialogSpeed = textfield.getInteger();
-            ConfigClient.DialogSpeedProperty.set(ConfigClient.DialogSpeed);
-            ConfigClient.config.save();
-        }
     }
 }

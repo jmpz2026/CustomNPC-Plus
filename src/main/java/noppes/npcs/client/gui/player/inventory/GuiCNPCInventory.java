@@ -81,6 +81,14 @@ public class GuiCNPCInventory extends GuiNPCInterface {
         clientButton.renderResource = specialIcons;
         addSideButton(clientButton);
 
+        y += 21;
+        GuiMenuSideButton dialogButton = new GuiMenuSideButton(-105, guiLeft + xSize + 37, this.guiTop + y, 22, 22, "");
+        dialogButton.rightSided = true;
+        dialogButton.active = activeTab == -105;
+        dialogButton.renderIconPosX = 80;
+        dialogButton.renderResource = specialIcons;
+        addSideButton(dialogButton);
+
         int effectBarX = guiLeft - 40;
         int effectBarY = guiTop + 10;
         int effectBarWidth = 28;
@@ -153,6 +161,10 @@ public class GuiCNPCInventory extends GuiNPCInterface {
             if (guibutton.id == -104 && activeTab != -104) {
                 activeTab = -104;
                 mc.displayGuiScreen(new GuiProfiles());
+            }
+            if (guibutton.id == -105 && activeTab != -105) {
+                activeTab = -105;
+                mc.displayGuiScreen(new GuiDialogSettings());
             }
         }
     }
