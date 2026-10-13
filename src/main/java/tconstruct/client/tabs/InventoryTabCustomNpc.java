@@ -5,6 +5,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import noppes.npcs.CustomItems;
 import noppes.npcs.client.gui.player.inventory.GuiCNPCInventory;
+import noppes.npcs.client.gui.player.inventory.GuiDialogSettings;
 import noppes.npcs.client.gui.player.inventory.GuiFaction;
 import noppes.npcs.client.gui.player.inventory.GuiParty;
 import noppes.npcs.client.gui.player.inventory.GuiProfiles;
@@ -43,20 +44,20 @@ public class InventoryTabCustomNpc extends AbstractTab {
     public static void tabHelper() {
         Minecraft mc = Minecraft.getMinecraft();
         int tab = GuiCNPCInventory.activeTab;
-        if (tab == -100) {
-            mc.displayGuiScreen(new GuiQuestLog());
-        }
         if (tab == -101) {
             mc.displayGuiScreen(new GuiParty());
-        }
-        if (tab == -102) {
+        } else if (tab == -102) {
             mc.displayGuiScreen(new GuiFaction());
-        }
-        if (tab == -103) {
+        } else if (tab == -103) {
             mc.displayGuiScreen(new GuiSettings());
-        }
-        if (tab == -104) {
+        } else if (tab == -104) {
             mc.displayGuiScreen(new GuiProfiles());
+        } else if (tab == -105) {
+            mc.displayGuiScreen(new GuiDialogSettings());
+        } else {
+            // the quest log is the default, also for a tab this helper does not know
+            GuiCNPCInventory.activeTab = -100;
+            mc.displayGuiScreen(new GuiQuestLog());
         }
     }
 }

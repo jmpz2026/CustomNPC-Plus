@@ -54,14 +54,13 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
         EnumDialogStyle style = DialogScreens.effectiveStyle();
         int x = guiLeft + 8, y = guiTop + 8;
 
+        // Every label goes above its control: the column is too narrow for both on one line
         addLabel(new GuiNpcLabel(1, "dialogstyle.style", x, y));
         GuiNpcButton styleButton = new GuiNpcButton(1, x, y + 10, 96, 20, STYLE_KEYS, style.ordinal());
         styleButton.setEnabled(!DialogScreens.isForced());
         addButton(styleButton);
-        if (DialogScreens.isForced())
-            addLabel(new GuiNpcLabel(9, "dialogstyle.forced", x, y + 32, 0xA02020));
 
-        y += DialogScreens.isForced() ? 44 : 34;
+        y += 34;
         addLabel(new GuiNpcLabel(2, "dialogstyle.scale", x, y));
         GuiNpcButton scaleButton = new GuiNpcButton(2, x, y + 10, 96, 20, SCALE_KEYS, ConfigClient.DialogScale);
         // The scale only applies to the cinematic style
@@ -69,21 +68,23 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
         addButton(scaleButton);
 
         y += 34;
-        addLabel(new GuiNpcLabel(3, "dialogstyle.instant", x, y + 5));
-        addButton(new GuiNpcButton(3, x + 66, y, 30, 20, new String[]{"gui.no", "gui.yes"}, ConfigClient.DialogInstantText ? 1 : 0));
+        addLabel(new GuiNpcLabel(3, "dialogstyle.instant", x, y));
+        addButton(new GuiNpcButton(3, x, y + 10, 96, 20, new String[]{"gui.no", "gui.yes"}, ConfigClient.DialogInstantText ? 1 : 0));
 
-        y += 22;
-        addLabel(new GuiNpcLabel(4, "settings.dialogSpeed", x, y + 5));
-        GuiNpcTextField speed = new GuiNpcTextField(10, this, fontRendererObj, x + 66, y, 30, 20, ConfigClient.DialogSpeed + "");
+        y += 34;
+        addLabel(new GuiNpcLabel(4, "dialogstyle.speed", x, y));
+        GuiNpcTextField speed = new GuiNpcTextField(10, this, fontRendererObj, x + 1, y + 10, 45, 18, ConfigClient.DialogSpeed + "");
         speed.integersOnly = true;
         speed.setMinMaxDefault(1, 20, 10);
         addTextField(speed);
 
-        y += 22;
-        addLabel(new GuiNpcLabel(5, "settings.dialogSound", x, y + 5));
-        addButton(new GuiNpcButton(4, x + 66, y, 30, 20, new String[]{"gui.no", "gui.yes"}, ConfigClient.DialogSound ? 1 : 0));
+        y += 34;
+        addLabel(new GuiNpcLabel(5, "dialogstyle.sound", x, y));
+        addButton(new GuiNpcButton(4, x, y + 10, 96, 20, new String[]{"gui.no", "gui.yes"}, ConfigClient.DialogSound ? 1 : 0));
 
         addLabel(new GuiNpcLabel(6, "dialogstyle.preview", guiLeft + BOX_X, guiTop + 8));
+        if (DialogScreens.isForced())
+            addLabel(new GuiNpcLabel(9, "dialogstyle.forced", guiLeft + BOX_X, guiTop + BOX_Y + BOX_H + 6, 0xA02020));
     }
 
     private void restartPreview() {

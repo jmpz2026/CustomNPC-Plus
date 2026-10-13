@@ -7,8 +7,9 @@ import java.util.regex.Pattern;
 
 /**
  * Splits a dialog text into pages of at most maxLines lines, cutting at the end of a
- * sentence whenever it can. A blank line in the text always starts a new page, a single
- * line break is kept as a line break.
+ * paragraph or a sentence whenever it can. Authors use blank lines as paragraph spacing,
+ * so a paragraph starts on a new line but shares the page with the previous one if it
+ * fits; a single line break is kept as a line break.
  *
  * Pause marks of the gradual text ({20}) arrive here already turned into {@link #PAUSE}
  * characters, which take no width.
@@ -30,13 +31,15 @@ public final class DialogPager {
      */
     public static List<List<String>> paginate(String text, int wrapW, int maxLines) {
         List<String> pages = new ArrayList<String>();
+        String cur = "";
         for (String para : text.replace("\r", "").split("\n\\s*\n")) {
-            String cur = "";
+            boolean firstOfParagraph = true;
             for (String raw : sentences(para)) {
                 String sen = raw.trim();
                 if (sen.isEmpty())
                     continue;
-                String joined = cur.isEmpty() ? sen : cur + " " + sen;
+                String joined = cur.isEmpty() ? sen : cur + (firstOfParagraph ? "\n" : " ") + sen;
+                firstOfParagraph = false;
                 if (wrap(joined, wrapW).size() <= maxLines) {
                     cur = joined;
                     continue;
@@ -58,9 +61,9 @@ public final class DialogPager {
                         cur = chunk;
                 }
             }
-            if (!cur.isEmpty())
-                pages.add(cur);
         }
+        if (!cur.isEmpty())
+            pages.add(cur);
         List<List<String>> out = new ArrayList<List<String>>();
         String carry = "";
         for (String page : pages) {
