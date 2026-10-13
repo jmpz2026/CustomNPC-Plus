@@ -3,14 +3,50 @@ package noppes.npcs.client.gui.player.cinematic;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import noppes.npcs.client.ClientProxy;
+import noppes.npcs.config.ConfigClient;
 import org.lwjgl.opengl.GL11;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Flat 2D primitives of the cinematic dialog style. Coordinates are floats in the
  * logical units of the current matrix, colors are ARGB.
  */
 public final class CinematicDraw {
+    /**
+     * Real pixels per logical unit of what is being drawn now. The dialog font (StringCache)
+     * rasterizes its glyphs for 2 pixels per unit, so text drawn at any other density gets
+     * stretched or squeezed: pixelated at 1440p with the auto scale, letters missing in the
+     * small preview. The screens set this before drawing so the text uses a copy of the
+     * font rasterized for the real density.
+     */
+    public static float pixelsPerUnit = 2;
+    // StringCache.BASELINE_OFFSET, private there
+    private static final int BASELINE_OFFSET = 7;
+
+    private static final Map<Integer, ClientProxy.FontContainer> sizedFonts = new HashMap<Integer, ClientProxy.FontContainer>();
+
     private CinematicDraw() {
+    }
+
+    private static float fontRatio() {
+        return pixelsPerUnit / 2f;
+    }
+
+    private static ClientProxy.FontContainer font() {
+        ClientProxy.FontContainer base = ClientProxy.Font;
+        float r = fontRatio();
+        // The Minecraft font is pixel art: scaling it is how it is meant to look
+        if (!base.useCustomFont || Math.abs(r - 1) < 0.05f)
+            return base;
+        int size = Math.max(4, Math.round(ConfigClient.FontSize * r));
+        ClientProxy.FontContainer f = sizedFonts.get(size);
+        if (f == null) {
+            f = new ClientProxy.FontContainer(ConfigClient.FontType, size);
+            sizedFonts.put(size, f);
+        }
+        return f;
     }
 
     private static void begin() {
@@ -101,20 +137,36 @@ public final class CinematicDraw {
             return Math.round(x);
         int a = (int) (((color >>> 24) == 0 ? 255 : (color >>> 24)) * alpha);
         if (a < 5)
-            return Math.round(x) + ClientProxy.Font.width(s);
+            return Math.round(x) + width(s);
         GL11.glEnable(GL11.GL_BLEND);
         OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-        ClientProxy.Font.drawString(s, Math.round(x), Math.round(y), (a << 24) | (color & 0xFFFFFF));
+        ClientProxy.FontContainer f = font();
+        if (f == ClientProxy.Font) {
+            f.drawString(s, Math.round(x), Math.round(y), (a << 24) | (color & 0xFFFFFF));
+        } else {
+            float r = fontRatio();
+            GL11.glPushMatrix();
+            GL11.glTranslatef(Math.round(x), Math.round(y), 0);
+            GL11.glScalef(1 / r, 1 / r, 1);
+            // StringCache moves the text down by a fixed BASELINE_OFFSET (7) tuned for the
+            // default size: a bigger copy needs it scaled, or the text rides high
+            f.drawString(s, 0, Math.round(BASELINE_OFFSET * (r - 1)), (a << 24) | (color & 0xFFFFFF));
+            GL11.glPopMatrix();
+        }
         GL11.glColor4f(1, 1, 1, 1);
-        return Math.round(x) + ClientProxy.Font.width(s);
+        return Math.round(x) + width(s);
     }
 
     public static int width(String s) {
-        return s == null ? 0 : ClientProxy.Font.width(s);
+        if (s == null)
+            return 0;
+        ClientProxy.FontContainer f = font();
+        return f == ClientProxy.Font ? f.width(s) : Math.round(f.width(s) / fontRatio());
     }
 
     public static int fontHeight() {
-        return ClientProxy.Font.height();
+        ClientProxy.FontContainer f = font();
+        return f == ClientProxy.Font ? f.height() : Math.round(f.height() / fontRatio());
     }
 
     /**

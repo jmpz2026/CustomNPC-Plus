@@ -148,7 +148,9 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
         float k = BOX_W / (float) PREVIEW_W;
         GL11.glScalef(k, k, 1);
         // The preview does not follow the mouse: it is a demo, not a control
+        CinematicDraw.pixelsPerUnit = sf * k;
         preview.draw(PREVIEW_W, PREVIEW_H, -1000, -1000);
+        CinematicDraw.pixelsPerUnit = 2;
         GL11.glPopMatrix();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }

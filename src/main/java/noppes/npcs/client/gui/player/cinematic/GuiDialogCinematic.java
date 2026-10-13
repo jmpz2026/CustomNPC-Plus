@@ -191,12 +191,15 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
 
         GL11.glPushMatrix();
         GL11.glScalef(1 / k, 1 / k, 1);
+        // set before any layout: text widths depend on it
+        CinematicDraw.pixelsPerUnit = s;
         if (!dialog.hideNPC) {
             float[] p = view.npcPlacement(W, H);
             drawNpc(p[0], p[1], p[2]);
         }
         GL11.glTranslatef(0, 0, 300);
         view.draw(W, H, mouseX * k, mouseY * k);
+        CinematicDraw.pixelsPerUnit = 2;
         GL11.glPopMatrix();
     }
 
