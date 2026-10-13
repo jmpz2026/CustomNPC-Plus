@@ -126,7 +126,9 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
                 option.optionColor, DialogIcons.iconFor(option, npc.advanced.role)));
         }
 
-        view.gradual = dialog.renderGradual && !ConfigClient.DialogInstantText;
+        // The cinematic style always types the text (renderGradual is for the other styles);
+        // the player turns it off with "Instant text"
+        view.gradual = !ConfigClient.DialogInstantText;
         view.speed = ConfigClient.DialogSpeed;
         view.escAllowed = closeOnEsc;
         view.historyKeyName = ClientProxy.DialogHistoryKey == null ? "H" : Keyboard.getKeyName(ClientProxy.DialogHistoryKey.getKeyCode());
