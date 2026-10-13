@@ -47,32 +47,25 @@
       "misc/swosh"
     ]
   },
-  "songs.excalibur": {
+  "songs.musica4": {
     "category": "player",
-    "sounds": [
-      {
-        "name": "songs/Failboat103 - Excalibuuur",
-        "stream": true
-      }
-    ]
+    "sounds": [{"name": "songs/music4", "stream": true}]
   },
-  "songs.kyleb_7by8": {
+  "songs.musica8": {
     "category": "player",
-    "sounds": [
-      {
-        "name": "songs/TheKyleb - 7 by 8",
-        "stream": true
-      }
-    ]
+    "sounds": [{"name": "songs/music8", "stream": true}]
   },
-  "songs.kyleb_bard": {
+  "songs.musica9": {
     "category": "player",
-    "sounds": [
-      {
-        "name": "songs/TheKyleb - Bard",
-        "stream": true
-      }
-    ]
+    "sounds": [{"name": "songs/music9", "stream": true}]
+  },
+  "songs.musica12": {
+    "category": "player",
+    "sounds": [{"name": "songs/music12", "stream": true}]
+  },
+  "songs.musicacasino": {
+    "category": "player",
+    "sounds": [{"name": "songs/musiccasino", "stream": true}]
   },
   "human.female.evil.attack": {
     "category": "player",
