@@ -249,7 +249,6 @@ dialog.quest.obtained=Quest received
 dialogstyle.style=Dialog style
 dialogstyle.new=Cinematic
 dialogstyle.classic=Classic
-dialogstyle.modern=Modern
 dialogstyle.forced=Set by the server
 dialogstyle.scale=Scale
 dialogstyle.scale.auto=Auto

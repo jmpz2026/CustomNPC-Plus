@@ -220,7 +220,6 @@ dialog.quest.obtained=Missão recebida
 dialogstyle.style=Estilo de diálogo
 dialogstyle.new=Cinematográfico
 dialogstyle.classic=Clássico
-dialogstyle.modern=Moderno
 dialogstyle.forced=Definido pelo servidor
 dialogstyle.scale=Escala
 dialogstyle.scale.auto=Auto

@@ -5,7 +5,7 @@ package noppes.npcs.constants;
  * the dialog data and the packets are the same for every style.
  */
 public enum EnumDialogStyle {
-    NEW("new"), CLASSIC("classic"), MODERN("modern");
+    NEW("new"), CLASSIC("classic");
 
     public final String configName;
 

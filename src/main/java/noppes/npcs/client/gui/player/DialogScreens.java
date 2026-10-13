@@ -7,8 +7,6 @@ import noppes.npcs.CustomNpcs;
 import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.client.NoppesUtil;
 import noppes.npcs.client.gui.player.cinematic.GuiDialogCinematic;
-import noppes.npcs.client.gui.player.modern.GuiModernDialogInteract;
-import noppes.npcs.client.gui.player.modern.GuiModernQuestDialog;
 import noppes.npcs.config.ConfigClient;
 import noppes.npcs.constants.EnumDialogStyle;
 import noppes.npcs.controllers.data.Dialog;
@@ -46,9 +44,7 @@ public final class DialogScreens {
     public static void open(EntityNPCInterface npc, Dialog dialog, EntityPlayer player) {
         EnumDialogStyle style = effectiveStyle();
         GuiScreen current = Minecraft.getMinecraft().currentScreen;
-        // The modern style shows quests on their own screen, so they never join the open one
-        boolean ownQuestScreen = style == EnumDialogStyle.MODERN && dialog.hasQuest();
-        if (current instanceof IDialogScreen && ((IDialogScreen) current).getDialogStyle() == style && !ownQuestScreen) {
+        if (current instanceof IDialogScreen && ((IDialogScreen) current).getDialogStyle() == style) {
             ((IDialogScreen) current).appendDialog(dialog);
             return;
         }
@@ -57,8 +53,7 @@ public final class DialogScreens {
 
     /**
      * Test button of the dialog editor: same style the author uses, and closing goes back
-     * to the editor. The modern screens cannot return to a parent, so they show the
-     * classic one there.
+     * to the editor.
      */
     public static void openPreview(GuiScreen parent, EntityNPCInterface npc, Dialog dialog, EntityPlayer player) {
         if (effectiveStyle() == EnumDialogStyle.NEW)
@@ -69,10 +64,6 @@ public final class DialogScreens {
 
     private static GuiScreen create(EnumDialogStyle style, EntityNPCInterface npc, Dialog dialog) {
         switch (style) {
-            case MODERN:
-                if (dialog.hasQuest())
-                    return new GuiModernQuestDialog(npc, dialog.getQuest(), dialog, -2);
-                return new GuiModernDialogInteract(npc, dialog);
             case CLASSIC:
                 return new GuiDialogInteract(npc, dialog);
             case NEW:

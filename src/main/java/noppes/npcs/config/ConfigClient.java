@@ -67,8 +67,6 @@ public class ConfigClient {
     public static Property DialogInstantTextProperty;
     public static boolean DialogInstantText = false;
 
-    public static Property DialogStyleMigratedProperty;
-
     public static Property ChatAlertsProperty;
     public static boolean ChatAlerts = true;
 
@@ -232,7 +230,7 @@ public class ConfigClient {
             DialogSoundProperty = config.get(VISUAL, "Dialog Sound", true, "Only for dialogs with sounds");
             DialogSound = DialogSoundProperty.getBoolean(true);
 
-            DialogStyleProperty = config.get(VISUAL, "Dialog Style", "new", "Dialog look: new, classic or modern. The server can force one for everybody");
+            DialogStyleProperty = config.get(VISUAL, "Dialog Style", "new", "Dialog look: new or classic. The server can force one for everybody");
             DialogStyle = DialogStyleProperty.getString();
 
             DialogScaleProperty = config.get(VISUAL, "Dialog Scale", 0, "Scale of the new dialog style: 0 = auto, 1-4 = fixed");
@@ -241,7 +239,8 @@ public class ConfigClient {
             DialogInstantTextProperty = config.get(VISUAL, "Dialog Instant Text", false, "Show the whole dialog text at once, ignoring gradual text");
             DialogInstantText = DialogInstantTextProperty.getBoolean(false);
 
-            DialogStyleMigratedProperty = config.get(VISUAL, "Dialog Style Migrated", false, "Internal: the old 'Experimental Dialog GUI' setting was already moved to 'Dialog Style'");
+            // left by an older build of the dialog styles
+            config.getCategory(VISUAL).remove("Dialog Style Migrated");
 
             ChatAlertsProperty = config.get(VISUAL, "All Chat Alerts", true, "Universal enable/disable for Banner Alerts");
             ChatAlerts = ChatAlertsProperty.getBoolean(true);

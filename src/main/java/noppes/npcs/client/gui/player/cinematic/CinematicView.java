@@ -17,9 +17,6 @@ import java.util.List;
  * Everything the cinematic dialog style draws and decides, in logical units and
  * without packets: the screen feeds it a dialog and turns its answers into packets,
  * and the settings tab uses it as a live preview with made up content.
- *
- * Layout and behaviour follow the approved mockup
- * (DbrServerPack/docs/mockups/customnpc-dialogos/nuevo.html).
  */
 public class CinematicView {
 
@@ -64,7 +61,7 @@ public class CinematicView {
         void play(float variation);
     }
 
-    // Picked in the audition page: 8% pitch variation, 6x stop after . ! ? (half after , ; :)
+    // 8% pitch variation per syllable, 6x stop after . ! ? (half after , ; :)
     private static final float PITCH_VARIATION = 0.08f;
     private static final float PUNCTUATION_PAUSE = 6f;
     private static final java.util.Random RANDOM = new java.util.Random();
@@ -274,7 +271,7 @@ public class CinematicView {
     }
 
     private float charsPerSecond() {
-        // 3 letters a second per step: the default 15 is the 45 picked in the audition page
+        // 3 letters a second per step: the default 15 is 45 letters a second
         return 3f * Math.max(1, speed);
     }
 
@@ -285,7 +282,6 @@ public class CinematicView {
     /**
      * Reveals the text one character at a time: a sound at the start of each syllable
      * (a vowel after a non vowel), a longer stop after punctuation and the {N} pauses.
-     * Same cadence as the audition page (DbrServerPack/docs/mockups/customnpc-dialogos/sonidos.html).
      */
     private void advanceText() {
         long now = System.currentTimeMillis();
@@ -521,14 +517,24 @@ public class CinematicView {
             return;
         float xx = x + 6;
         yy += 2;
-        for (ItemStack stack : quest.rewards) {
+        String xp = quest.xp > 0 ? "XP " + quest.xp : "";
+        float right = x + w - 6 - (xp.isEmpty() ? 0 : CinematicDraw.width(xp) + 4);
+        for (int i = 0; i < quest.rewards.size(); i++) {
+            ItemStack stack = quest.rewards.get(i);
+            String count = stack.stackSize > 1 ? "x" + stack.stackSize : "";
+            // what does not fit is summed up as +N
+            if (xx + 12 + CinematicDraw.width(count) > right) {
+                xx = CinematicDraw.text("+" + (quest.rewards.size() - i), xx, yy, 0xFFE8E8E8, a) + 4;
+                break;
+            }
             drawItem(stack, xx, yy - 1, 10, a);
             xx += 12;
-            if (stack.stackSize > 1)
-                xx = CinematicDraw.text("x" + stack.stackSize, xx, yy, 0xFFE8E8E8, a) + 6;
+            if (!count.isEmpty())
+                xx = CinematicDraw.text(count, xx, yy, 0xFFE8E8E8, a);
+            xx += 4;
         }
-        if (quest.xp > 0)
-            CinematicDraw.text("XP " + quest.xp, xx, yy, 0xFF7CFF8A, a);
+        if (!xp.isEmpty())
+            CinematicDraw.text(xp, xx, yy, 0xFF7CFF8A, a);
     }
 
     private void drawItem(ItemStack stack, float x, float y, float size, float alpha) {

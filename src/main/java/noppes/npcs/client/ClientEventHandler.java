@@ -148,9 +148,12 @@ public class ClientEventHandler {
         }
     }
 
+    // Set while a GUI draws an NPC (the dialog screen): its marks would float over the portrait
+    public static boolean hideMarks = false;
+
     @SubscribeEvent
     public void onRenderEntity(RenderLivingEvent.Post event) {
-        if (event.entity instanceof EntityNPCInterface) {
+        if (event.entity instanceof EntityNPCInterface && !hideMarks) {
             MarkData markData = MarkData.get((EntityNPCInterface) event.entity);
             EntityPlayer player = Minecraft.getMinecraft().thePlayer;
             if (PlayerData.get(player) != null) {

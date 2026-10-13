@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldListener {
     private static final ResourceLocation resource = new ResourceLocation("customnpcs", "textures/gui/standardbg.png");
-    private static final String[] STYLE_KEYS = {"dialogstyle.new", "dialogstyle.classic", "dialogstyle.modern"};
+    private static final String[] STYLE_KEYS = {"dialogstyle.new", "dialogstyle.classic"};
     private static final String[] SCALE_KEYS = {"dialogstyle.scale.auto", "1", "2", "3", "4"};
 
     // Logical size the preview is laid out at, then shrunk into the box
@@ -123,7 +123,7 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
 
         EnumDialogStyle style = DialogScreens.effectiveStyle();
         if (style != EnumDialogStyle.NEW) {
-            drawStaticPreview(x, y, style);
+            drawStaticPreview(x, y);
             return;
         }
 
@@ -156,24 +156,15 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
     }
 
     /**
-     * Classic and modern draw against the whole screen, so they cannot be shrunk into a
-     * box: a schematic of their layout stands in for them.
+     * The classic style draws against the whole screen, so it cannot be shrunk into a
+     * box: a schematic of its layout stands in for it.
      */
-    private void drawStaticPreview(int x, int y, EnumDialogStyle style) {
-        if (style == EnumDialogStyle.CLASSIC) {
-            drawRect(x + 8, y + 58, x + BOX_W - 8, y + 60, 0xFFFEA53B);
-            for (int l = 0; l < 3; l++)
-                drawRect(x + 20, y + 66 + l * 8, x + 20 + 90 - l * 20, y + 70 + l * 8, 0xFFE0E0E0);
-            for (int l = 0; l < 3; l++)
-                drawRect(x + 20, y + 94 + l * 7, x + 70, y + 97 + l * 7, 0xFFB0B0FF);
-        } else {
-            drawRect(x, y + 72, x + BOX_W, y + BOX_H, 0x99000000);
-            drawRect(x + 8, y + 84, x + BOX_W - 8, y + 85, 0xFFFEA53B);
-            for (int l = 0; l < 2; l++)
-                drawRect(x + 30, y + 92 + l * 8, x + BOX_W - 30, y + 96 + l * 8, 0xFFE0E0E0);
-            for (int l = 0; l < 3; l++)
-                drawRect(x + BOX_W - 62, y + 24 + l * 10, x + BOX_W - 6, y + 31 + l * 10, 0xCC303040);
-        }
+    private void drawStaticPreview(int x, int y) {
+        drawRect(x + 8, y + 58, x + BOX_W - 8, y + 60, 0xFFFEA53B);
+        for (int l = 0; l < 3; l++)
+            drawRect(x + 20, y + 66 + l * 8, x + 20 + 90 - l * 20, y + 70 + l * 8, 0xFFE0E0E0);
+        for (int l = 0; l < 3; l++)
+            drawRect(x + 20, y + 94 + l * 7, x + 70, y + 97 + l * 7, 0xFFB0B0FF);
         String label = tr("dialogstyle.preview.static");
         CinematicDraw.text(label, x + 4, y + 4, 0xFFFFFFFF, 1);
     }

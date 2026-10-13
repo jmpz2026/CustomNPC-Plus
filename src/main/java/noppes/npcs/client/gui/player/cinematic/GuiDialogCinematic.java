@@ -16,6 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import noppes.npcs.NoppesStringUtils;
 import noppes.npcs.api.handler.data.IDialogImage;
 import noppes.npcs.api.handler.data.IQuestObjective;
+import noppes.npcs.client.ClientEventHandler;
 import noppes.npcs.client.ClientProxy;
 import noppes.npcs.client.NoppesUtil;
 import noppes.npcs.client.controllers.MusicController;
@@ -144,7 +145,7 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         info.title = quest.getName();
         info.xp = quest.rewardExp;
         // The objectives read the player's quest data, so the quest goes in for a moment if
-        // the server has not synced it yet (same trick as the modern quest screen)
+        // the server has not synced it yet
         Map<Integer, QuestData> active = PlayerData.get(player).questData.activeQuests;
         boolean had = active.containsKey(quest.id);
         if (!had)
@@ -190,7 +191,7 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
 
     /**
      * Pitch factor of an NPC from its name: up to 6 semitones up or down, always the same for
-     * the same name, so every character keeps its own voice. Same hash as the audition page.
+     * the same name, so every character keeps its own voice.
      */
     static float npcVoice(String name) {
         long h = 0;
@@ -292,7 +293,12 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         RenderHelper.enableStandardItemLighting();
         RenderManager.instance.playerViewY = 180F;
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        RenderManager.instance.renderEntityWithPosYaw(npc, 0.0, 0.0, 0.0, 0.0F, 1.0F);
+        ClientEventHandler.hideMarks = true;
+        try {
+            RenderManager.instance.renderEntityWithPosYaw(npc, 0.0, 0.0, 0.0, 0.0F, 1.0F);
+        } finally {
+            ClientEventHandler.hideMarks = false;
+        }
         GL11.glPopMatrix();
 
         entity.renderYawOffset = f2;
