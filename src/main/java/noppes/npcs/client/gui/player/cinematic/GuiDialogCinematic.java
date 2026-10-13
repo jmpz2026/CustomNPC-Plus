@@ -246,7 +246,8 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         int visibleName = npc.display.showName;
         npc.display.showName = 1;
 
-        float k = height / Math.max(0.5f, entity.height) * dialog.npcScale;
+        // Sized against a standard 1.8 block player, not the hitbox: a child NPC stays smaller
+        float k = height / 1.8f * dialog.npcScale;
         GL11.glPushMatrix();
         // Same transform as the other styles: z flipped, then the entity turned to face the camera
         GL11.glTranslatef(feetX, feetY, 50.0F);

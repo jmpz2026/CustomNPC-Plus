@@ -345,7 +345,7 @@ public class CinematicView {
      */
     public float[] npcPlacement(int W, int H) {
         Layout l = layout(W, H);
-        float h = Math.min(H * 0.5f, 150);
+        float h = Math.min(H * 0.42f, 130);
         return new float[]{Math.round(W * (l.compact ? 0.28f : 0.32f)), l.nameY + 10, h};
     }
 
