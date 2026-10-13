@@ -4,7 +4,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IImageBuffer;
-import net.minecraft.client.renderer.texture.SimpleTexture;
+import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
@@ -22,8 +22,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Extends {@link ThreadDownloadImageData} only for its type: every method is overridden.
+ * Resource reloads flush any {@code SimpleTexture} whose location is not a file in a resource
+ * pack (MCPatcher, bundled with Angelica) and spare downloaded textures by checking for this
+ * class. Extending {@code SimpleTexture} got NPC skins dropped on every language or resource
+ * pack change; the NPC keeps its {@code textureLocation}, so it rendered with the missing
+ * texture until restart.
+ */
 @SideOnly(Side.CLIENT)
-public class ImageDownloadAlt extends SimpleTexture {
+public class ImageDownloadAlt extends ThreadDownloadImageData {
     private static final Logger logger = LogManager.getLogger();
     private static final AtomicInteger threadDownloadCounter = new AtomicInteger(0);
     private final File cacheFile;
@@ -34,7 +42,7 @@ public class ImageDownloadAlt extends SimpleTexture {
     private boolean textureUploaded;
 
     public ImageDownloadAlt(File file, String url, ResourceLocation resource, IImageBuffer buffer) {
-        super(resource);
+        super(file, url, resource, buffer);
         this.cacheFile = file;
         this.imageUrl = url;
         this.imageBuffer = buffer;
