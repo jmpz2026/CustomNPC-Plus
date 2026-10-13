@@ -188,28 +188,6 @@ public final class DialogPager {
         return s.substring(0, Math.min(i, s.length()));
     }
 
-    /**
-     * Pause marks inside the first {@code visible} visible characters.
-     */
-    public static int pausesWithin(String s, int visible) {
-        int n = 0, pauses = 0;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c == '§') {
-                i++;
-                continue;
-            }
-            if (c == PAUSE) {
-                if (n <= visible)
-                    pauses++;
-                continue;
-            }
-            if (++n > visible)
-                break;
-        }
-        return pauses;
-    }
-
     public static String strip(String s) {
         return s.replace(String.valueOf(PAUSE), "");
     }

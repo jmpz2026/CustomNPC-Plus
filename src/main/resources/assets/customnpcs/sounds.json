@@ -2,9 +2,7 @@
   "dialog.blip": {
     "category": "master",
     "sounds": [
-      "dialog/blip1",
-      "dialog/blip2",
-      "dialog/blip3"
+      "dialog/blip"
     ]
   },
   "gun.empty": {

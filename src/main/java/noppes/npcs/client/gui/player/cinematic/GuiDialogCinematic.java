@@ -64,8 +64,8 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         super(npc);
         view.textSound = new CinematicView.TextSound() {
             @Override
-            public void play() {
-                playTextSound();
+            public void play(float variation) {
+                playTextSound(variation);
             }
         };
         appendDialog(dialog);
@@ -169,13 +169,35 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
     private static final String DEFAULT_TEXT_SOUND = "minecraft:random.wood_click";
     private static final ResourceLocation BLIP = new ResourceLocation("customnpcs", "dialog.blip");
 
-    private void playTextSound() {
+    private void playTextSound(float variation) {
         // An empty sound is a silent dialog on purpose
         if (!ConfigClient.DialogSound || dialog.textSound == null || dialog.textSound.isEmpty())
             return;
-        // The default wood click becomes the style's own blip; a sound the author picked stays
-        ResourceLocation sound = DEFAULT_TEXT_SOUND.equals(dialog.textSound) ? BLIP : new ResourceLocation(dialog.textSound);
-        mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(sound, dialog.textPitch));
+        float pitch = dialog.textPitch * variation;
+        ResourceLocation sound;
+        if (DEFAULT_TEXT_SOUND.equals(dialog.textSound)) {
+            // The default wood click becomes the style's own blip, with a voice per NPC
+            sound = BLIP;
+            pitch *= npcVoice(npc.getCommandSenderName());
+        } else {
+            // a sound the author picked stays as it is
+            sound = new ResourceLocation(dialog.textSound);
+        }
+        // Minecraft clamps the pitch to 0.5-2
+        pitch = Math.max(0.5f, Math.min(2f, pitch));
+        mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(sound, pitch));
+    }
+
+    /**
+     * Pitch factor of an NPC from its name: up to 6 semitones up or down, always the same for
+     * the same name, so every character keeps its own voice. Same hash as the audition page.
+     */
+    static float npcVoice(String name) {
+        long h = 0;
+        for (int i = 0; i < name.length(); i++)
+            h = (h * 31 + name.charAt(i)) & 0xFFFFFFFFL;
+        int semitones = (int) (h % 13) - 6;
+        return (float) Math.pow(2, semitones / 12.0);
     }
 
     // ================================================================ drawing

@@ -58,8 +58,16 @@ public class CinematicView {
     public enum Action {NONE, CHOOSE, FINISH}
 
     public interface TextSound {
-        void play();
+        /**
+         * @param variation random pitch factor around 1 for this syllable
+         */
+        void play(float variation);
     }
+
+    // Picked in the audition page: 8% pitch variation, 6x stop after . ! ? (half after , ; :)
+    private static final float PITCH_VARIATION = 0.08f;
+    private static final float PUNCTUATION_PAUSE = 6f;
+    private static final java.util.Random RANDOM = new java.util.Random();
 
     // Slot angles of the wheel, same slots as the classic one: 0-2 right top to bottom, 3-5 left
     private static final float[][] SLOT_ANGLES = {{-90, -30}, {-30, 30}, {30, 90}, {210, 270}, {150, 210}, {90, 150}};
@@ -102,11 +110,13 @@ public class CinematicView {
     private int page;
     private float revealed;
     private boolean full;
-    private int handledPauses;
+    private float budgetMs;
     private long pauseLeftMs;
     private long lastFrame;
     private long optT0;
-    private int soundChars;
+    private char prevChar = ' ';
+    private String pageChars;
+    private int[] pauseTicksAt;
     private int scroll;
     private int kb = -1;
     private int hover = -1;
@@ -207,12 +217,41 @@ public class CinematicView {
 
     private void startPage() {
         revealed = 0;
-        handledPauses = 0;
+        budgetMs = 0;
         pauseLeftMs = 0;
-        soundChars = 0;
+        prevChar = ' ';
+        pageChars = null;
         full = !gradual;
         lastFrame = System.currentTimeMillis();
         optT0 = full ? lastFrame : 0;
+    }
+
+    /**
+     * Visible characters of the page (no color codes, no pause marks) and the pause, in
+     * ticks, that the {N} marks ask for right after each count of revealed characters.
+     */
+    private void buildPageChars() {
+        StringBuilder sb = new StringBuilder();
+        String joined = pageJoined();
+        int[] ticks = new int[joined.length() + 1];
+        int mark = pausesBefore[page];
+        for (int i = 0; i < joined.length(); i++) {
+            char c = joined.charAt(i);
+            if (c == '§') {
+                i++;
+                continue;
+            }
+            if (c == DialogPager.PAUSE) {
+                if (mark < pauses.size())
+                    ticks[sb.length()] += pauses.get(mark);
+                mark++;
+                continue;
+            }
+            sb.append(c);
+        }
+        pageChars = sb.toString();
+        pauseTicksAt = ticks;
+        pauseLeftMs = pauseTicksAt[0] * 50L;
     }
 
     private boolean lastPage() {
@@ -235,42 +274,56 @@ public class CinematicView {
     }
 
     private float charsPerSecond() {
-        // Same pace as the classic style: one char per tick at 10
-        if (speed > 10)
-            return 20f * (speed - 9);
-        return 20f / (11 - Math.max(1, speed));
+        // 3 letters a second per step: the default 15 is the 45 picked in the audition page
+        return 3f * Math.max(1, speed);
     }
 
+    private static boolean isVowel(char c) {
+        return "aeiouáéíóúü".indexOf(Character.toLowerCase(c)) >= 0;
+    }
+
+    /**
+     * Reveals the text one character at a time: a sound at the start of each syllable
+     * (a vowel after a non vowel), a longer stop after punctuation and the {N} pauses.
+     * Same cadence as the audition page (DbrServerPack/docs/mockups/customnpc-dialogos/sonidos.html).
+     */
     private void advanceText() {
         long now = System.currentTimeMillis();
         long dt = Math.min(200, now - lastFrame);
         lastFrame = now;
         if (full || pages == null)
             return;
-        String joined = pageJoined();
-        int total = DialogPager.visibleLength(joined);
+        if (pageChars == null)
+            buildPageChars();
         if (pauseLeftMs > 0) {
             pauseLeftMs -= dt;
-            return;
+            if (pauseLeftMs > 0)
+                return;
+            dt = -pauseLeftMs;
+            pauseLeftMs = 0;
         }
-        int before = (int) revealed;
-        revealed += dt * charsPerSecond() / 1000f;
-        int crossed = DialogPager.pausesWithin(joined, (int) revealed);
-        if (crossed > handledPauses) {
-            int index = pausesBefore[page] + handledPauses;
-            handledPauses++;
-            if (index < pauses.size())
-                pauseLeftMs = pauses.get(index) * 50L;
+        float interval = 1000f / charsPerSecond();
+        budgetMs += dt;
+        int shown = (int) revealed;
+        while (budgetMs >= interval && shown < pageChars.length()) {
+            budgetMs -= interval;
+            char c = pageChars.charAt(shown++);
+            if (isVowel(c) && !isVowel(prevChar) && textSound != null)
+                textSound.play(1 + (RANDOM.nextFloat() * 2 - 1) * PITCH_VARIATION);
+            prevChar = c;
+            long stop = pauseTicksAt[shown] * 50L;
+            if (".!?".indexOf(c) >= 0)
+                stop += (long) (interval * (PUNCTUATION_PAUSE - 1));
+            else if (",;:".indexOf(c) >= 0)
+                stop += (long) (interval * (PUNCTUATION_PAUSE / 2 - 1));
+            if (stop > 0) {
+                pauseLeftMs = stop;
+                budgetMs = 0;
+                break;
+            }
         }
-        int now_ = (int) revealed;
-        soundChars += Math.max(0, Math.min(now_, total) - before);
-        // about 22 blips a second whatever the speed, like the mockup
-        int every = Math.max(2, Math.round(charsPerSecond() / 22f));
-        if (soundChars >= every && textSound != null) {
-            soundChars = 0;
-            textSound.play();
-        }
-        if (revealed >= total) {
+        revealed = shown;
+        if (shown >= pageChars.length()) {
             full = true;
             optT0 = now;
         }
