@@ -75,7 +75,7 @@ public class GuiDialogSettings extends GuiCNPCInventory implements ITextfieldLis
         addLabel(new GuiNpcLabel(4, "dialogstyle.speed", x, y));
         GuiNpcTextField speed = new GuiNpcTextField(10, this, fontRendererObj, x + 1, y + 10, 45, 18, ConfigClient.DialogSpeed + "");
         speed.integersOnly = true;
-        speed.setMinMaxDefault(1, 20, 10);
+        speed.setMinMaxDefault(1, 20, 15);
         addTextField(speed);
 
         y += 34;

@@ -89,7 +89,7 @@ public class CinematicView {
 
     // ---------------------------------------------------------------- settings
     public boolean gradual = true;
-    public int speed = 10;
+    public int speed = 15;
     public boolean escAllowed = true;
     public String historyKeyName = "H";
     public TextSound textSound;
@@ -264,7 +264,9 @@ public class CinematicView {
         }
         int now_ = (int) revealed;
         soundChars += Math.max(0, Math.min(now_, total) - before);
-        if (soundChars >= 5 && textSound != null) {
+        // about 22 blips a second whatever the speed, like the mockup
+        int every = Math.max(2, Math.round(charsPerSecond() / 22f));
+        if (soundChars >= every && textSound != null) {
             soundChars = 0;
             textSound.play();
         }

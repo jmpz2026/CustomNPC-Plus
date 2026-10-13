@@ -166,10 +166,16 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         return info;
     }
 
+    private static final String DEFAULT_TEXT_SOUND = "minecraft:random.wood_click";
+    private static final ResourceLocation BLIP = new ResourceLocation("customnpcs", "dialog.blip");
+
     private void playTextSound() {
+        // An empty sound is a silent dialog on purpose
         if (!ConfigClient.DialogSound || dialog.textSound == null || dialog.textSound.isEmpty())
             return;
-        mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation(dialog.textSound), dialog.textPitch));
+        // The default wood click becomes the style's own blip; a sound the author picked stays
+        ResourceLocation sound = DEFAULT_TEXT_SOUND.equals(dialog.textSound) ? BLIP : new ResourceLocation(dialog.textSound);
+        mc.getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(sound, dialog.textPitch));
     }
 
     // ================================================================ drawing
@@ -184,7 +190,8 @@ public class GuiDialogCinematic extends GuiNPCInterface implements IGuiClose, ID
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         int s = cinematicScale(mc);
-        int W = mc.displayWidth / s, H = mc.displayHeight / s;
+        // rounded up: rounding down left a strip at the bottom without the bar
+        int W = (mc.displayWidth + s - 1) / s, H = (mc.displayHeight + s - 1) / s;
         float k = guiToLogical();
 
         if (dialog.darkenScreen)

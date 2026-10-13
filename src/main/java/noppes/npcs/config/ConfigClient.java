@@ -53,7 +53,7 @@ public class ConfigClient {
      * Questing Properties
      **/
     public static Property DialogSpeedProperty;
-    public static int DialogSpeed = 10;
+    public static int DialogSpeed = 15;
 
     public static Property DialogSoundProperty;
     public static boolean DialogSound = true;
@@ -226,8 +226,8 @@ public class ConfigClient {
                 && config.getCategory(VISUAL).get("Dialog Speed").getType() == Property.Type.BOOLEAN) {
                 config.getCategory(VISUAL).remove("Dialog Speed");
             }
-            DialogSpeedProperty = config.get(VISUAL, "Dialog Speed", 10, "Only set for gradual dialogs (1-20)");
-            DialogSpeed = DialogSpeedProperty.getInt(10);
+            DialogSpeedProperty = config.get(VISUAL, "Dialog Speed", 15, "Only set for gradual dialogs (1-20)");
+            DialogSpeed = DialogSpeedProperty.getInt(15);
 
             DialogSoundProperty = config.get(VISUAL, "Dialog Sound", true, "Only for dialogs with sounds");
             DialogSound = DialogSoundProperty.getBoolean(true);

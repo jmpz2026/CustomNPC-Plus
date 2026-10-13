@@ -32,7 +32,9 @@ public final class DialogPager {
     public static List<List<String>> paginate(String text, int wrapW, int maxLines) {
         List<String> pages = new ArrayList<String>();
         String cur = "";
-        for (String para : text.replace("\r", "").split("\n\\s*\n")) {
+        // \r alone is an old line break that many dialogs still use ("\r\r" between paragraphs)
+        String normal = text.replace("\r\n", "\n").replace('\r', '\n');
+        for (String para : normal.split("\n\\s*\n")) {
             boolean firstOfParagraph = true;
             for (String raw : sentences(para)) {
                 String sen = raw.trim();
