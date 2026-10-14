@@ -47,8 +47,11 @@ public class CustomOverlayLabel extends Gui implements IOverlayComponent {
 
     private static final ResourceLocation[] unicodePageLocations = new ResourceLocation[256];
     protected final ResourceLocation locationFontTexture;
-    protected int[] charWidth = new int[256];
-    protected byte[] glyphWidth = new byte[65536];
+    protected int[] charWidth;
+    protected byte[] glyphWidth;
+    // Read once for every label: each overlay update used to decode ascii.png and allocate 64 KB per label
+    private static int[] sharedCharWidth;
+    private static byte[] sharedGlyphWidth;
     private final int[] colorCode = new int[32];
 
     private float red;
@@ -68,8 +71,16 @@ public class CustomOverlayLabel extends Gui implements IOverlayComponent {
         this.labelShadowEnabled = shadow;
 
         locationFontTexture = new ResourceLocation("textures/font/ascii.png");
-        readFontTexture();
-        readGlyphSizes();
+        if (sharedCharWidth == null) {
+            this.charWidth = new int[256];
+            this.glyphWidth = new byte[65536];
+            readFontTexture();
+            readGlyphSizes();
+            sharedCharWidth = this.charWidth;
+            sharedGlyphWidth = this.glyphWidth;
+        }
+        this.charWidth = sharedCharWidth;
+        this.glyphWidth = sharedGlyphWidth;
         for (int i = 0; i < 32; ++i) {
             int j = (i >> 3 & 1) * 85;
             int k = (i >> 2 & 1) * 170 + j;
@@ -97,6 +108,12 @@ public class CustomOverlayLabel extends Gui implements IOverlayComponent {
 
             this.colorCode[i] = (k & 255) << 16 | (l & 255) << 8 | i1 & 255;
         }
+    }
+
+    // A resource pack can change the font
+    public static void clearFontMetrics() {
+        sharedCharWidth = null;
+        sharedGlyphWidth = null;
     }
 
     public void setParent(OverlayCustom parent) {

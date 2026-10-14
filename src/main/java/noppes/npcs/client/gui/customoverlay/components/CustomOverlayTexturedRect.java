@@ -3,21 +3,14 @@ package noppes.npcs.client.gui.customoverlay.components;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.IResource;
 import net.minecraft.util.ResourceLocation;
 import noppes.npcs.api.overlay.ICustomOverlayComponent;
-import noppes.npcs.client.ImageDownloadAlt;
+import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.client.gui.customoverlay.OverlayCustom;
 import noppes.npcs.client.gui.customoverlay.interfaces.IOverlayComponent;
-import noppes.npcs.client.renderer.ImageBufferDownloadAlt;
+import noppes.npcs.client.renderer.ImageData;
 import noppes.npcs.scripted.overlay.ScriptOverlayTexturedRect;
 import org.lwjgl.opengl.GL11;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class CustomOverlayTexturedRect extends Gui implements IOverlayComponent {
     OverlayCustom parent;
@@ -38,8 +31,8 @@ public class CustomOverlayTexturedRect extends Gui implements IOverlayComponent 
     float rotation;
 
     private int totalWidth, totalHeight;
-    private ImageDownloadAlt imageDownloadAlt = null;
-    private boolean isUrl = false;
+    // Shared cache: an overlay update no longer decodes the PNG or downloads the URL again
+    private final ImageData imageData;
     private boolean gotWidthHeight = false;
 
     public CustomOverlayTexturedRect(int id, String texture, int x, int y, int width, int height) {
@@ -57,19 +50,7 @@ public class CustomOverlayTexturedRect extends Gui implements IOverlayComponent 
         this.height = height;
         this.textureX = textureX;
         this.textureY = textureY;
-
-        if (directory.startsWith("https://")) {
-            this.isUrl = true;
-            TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
-            this.imageDownloadAlt = new ImageDownloadAlt(null, directory, new ResourceLocation("customnpcs:textures/gui/invisible.png"), new ImageBufferDownloadAlt(true, false));
-            texturemanager.loadTexture(this.location, this.imageDownloadAlt);
-        } else {
-            try {
-                this.getWidthHeight();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        this.imageData = ClientCacheHandler.getImageData(directory);
     }
 
     public void setParent(OverlayCustom parent) {
@@ -81,16 +62,20 @@ public class CustomOverlayTexturedRect extends Gui implements IOverlayComponent 
     }
 
     public void onRender(Minecraft mc, float partialTicks) {
-        mc.getTextureManager().bindTexture(this.location);
+        if (!gotWidthHeight) {
+            if (!imageData.imageLoaded())
+                return;
+            this.totalWidth = imageData.getTotalWidth();
+            this.totalHeight = imageData.getTotalHeight();
+            correctWidthHeight();
+            gotWidthHeight = true;
+        }
+        imageData.bindTexture();
 
         float u1 = (float) textureX / (float) totalWidth;
         float u2 = u1 + (float) width / (float) totalWidth;
         float v1 = (float) textureY / (float) totalHeight;
         float v2 = v1 + (float) height / (float) totalHeight;
-
-        if (imageDownloadAlt != null && isUrl && !gotWidthHeight) {
-            getURLWidthHeight();
-        }
 
         GL11.glPushMatrix();
         float red = (color >> 16 & 255) / 255f;
@@ -141,35 +126,6 @@ public class CustomOverlayTexturedRect extends Gui implements IOverlayComponent 
         rect.rotation = component.getRotation();
 
         return rect;
-    }
-
-    public void getWidthHeight() throws IOException {
-        InputStream inputstream = null;
-
-        try {
-            IResource iresource = Minecraft.getMinecraft().getResourceManager().getResource(this.location);
-            inputstream = iresource.getInputStream();
-            BufferedImage bufferedimage = ImageIO.read(inputstream);
-            gotWidthHeight = true;
-            this.totalWidth = bufferedimage.getWidth();
-            this.totalHeight = bufferedimage.getHeight();
-            correctWidthHeight();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (inputstream != null) {
-                inputstream.close();
-            }
-        }
-    }
-
-    public void getURLWidthHeight() {
-        if (imageDownloadAlt.isImageReady()) {
-            gotWidthHeight = true;
-            this.totalWidth = imageDownloadAlt.getImageWidth();
-            this.totalHeight = imageDownloadAlt.getImageHeight();
-            correctWidthHeight();
-        }
     }
 
     public void correctWidthHeight() {
