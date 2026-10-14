@@ -20,6 +20,13 @@ public class ConfigClient {
 
 
     /**
+     * General Properties
+     **/
+    public static Property CacheLifeProperty;
+    // The DBC addon reads it for its data caches
+    public static int CacheLife = 10;
+
+    /**
      * Visual Properties
      **/
     public static Property EnableChatBubblesProperty;
@@ -188,9 +195,8 @@ public class ConfigClient {
 
 
             // General
-            // Downloaded images now stay until leaving the world
-            if (config.hasCategory(GENERAL))
-                config.getCategory(GENERAL).remove("Cache Life");
+            CacheLifeProperty = config.get(GENERAL, "Cache Life", 10, "How long should cached player data be kept client side? (In minutes) Downloaded images stay until leaving the world");
+            CacheLife = CacheLifeProperty.getInt(10);
 
             // Visual
             EnableChatBubblesProperty = config.get(VISUAL, "Enable Chat Bubbles", true, "Enable/Disable Chat Bubbles");
