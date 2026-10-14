@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import noppes.npcs.AnimationMixinFunctions;
 import noppes.npcs.client.controllers.MusicController;
 import noppes.npcs.client.gui.customoverlay.OverlayCustom;
 import noppes.npcs.client.gui.hud.ClientHudManager;
@@ -168,6 +169,7 @@ public class ClientCacheHandler {
     public static void clearCache() {
         clearImageData();
         RenderNPCInterface.clearLocalSkins();
+        AnimationMixinFunctions.clearPartTypes();
         ClientCacheHandler.customOverlays.clear();
         ClientCacheHandler.skinOverlays.clear();
         ClientCacheHandler.playerAnimations.clear();

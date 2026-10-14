@@ -5,8 +5,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;
 import noppes.npcs.AnimationMixinFunctions;
-import noppes.npcs.client.ClientEventHandler;
-import noppes.npcs.constants.EnumAnimationPart;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -58,22 +56,6 @@ public abstract class MixinModelRenderer {
     @Overwrite
     @SideOnly(Side.CLIENT)
     public void render(float p_78785_1_) {
-        if (ClientEventHandler.partNames.isEmpty()) {
-            String[] headNames = new String[]{"field_78116_c", "bipedHead", "bipedHeadwear", "head", "Head", "headwear",
-                "bipedHeadg", "bipedHeadt", "bipedHeadgh", "bipedHeadv", "bipedHeadb", "bipedHeadt2"};
-            String[] bodyNames = new String[]{"field_78115_e", "bipedBody", "B1", "body", "Body", "UpperBody", "Body1", "BodyBase"};
-            String[] larmNames = new String[]{"field_78113_g", "bipedLeftArm", "LA", "leftarm", "ArmL", "Arm1L", "ArmL1"};
-            String[] rarmNames = new String[]{"field_78112_f", "bipedRightArm", "RA", "rightarm", "ArmR", "Arm1R", "ArmR1"};
-            String[] llegNames = new String[]{"field_78124_i", "bipedLeftLeg", "LL", "leftleg", "LegL", "Leg1L", "LegL1"};
-            String[] rlegNames = new String[]{"field_78123_h", "bipedRightLeg", "RL", "rightleg", "LegR", "Leg1R", "LegR1"};
-
-            ClientEventHandler.partNames.put(EnumAnimationPart.HEAD, headNames);
-            ClientEventHandler.partNames.put(EnumAnimationPart.BODY, bodyNames);
-            ClientEventHandler.partNames.put(EnumAnimationPart.LEFT_ARM, larmNames);
-            ClientEventHandler.partNames.put(EnumAnimationPart.RIGHT_ARM, rarmNames);
-            ClientEventHandler.partNames.put(EnumAnimationPart.LEFT_LEG, llegNames);
-            ClientEventHandler.partNames.put(EnumAnimationPart.RIGHT_LEG, rlegNames);
-        }
         if (!this.isHidden) {
             if (this.showModel) {
                 if (!this.compiled) {

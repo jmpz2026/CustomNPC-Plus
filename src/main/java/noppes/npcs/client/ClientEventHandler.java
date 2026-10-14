@@ -59,6 +59,16 @@ public class ClientEventHandler {
     public static EntityNPCInterface renderingNpc;
     public static EntityPlayer renderingPlayer;
     public static HashMap<EnumAnimationPart, String[]> partNames = new HashMap<>();
+
+    static {
+        partNames.put(EnumAnimationPart.HEAD, new String[]{"field_78116_c", "bipedHead", "bipedHeadwear", "head", "Head", "headwear",
+            "bipedHeadg", "bipedHeadt", "bipedHeadgh", "bipedHeadv", "bipedHeadb", "bipedHeadt2"});
+        partNames.put(EnumAnimationPart.BODY, new String[]{"field_78115_e", "bipedBody", "B1", "body", "Body", "UpperBody", "Body1", "BodyBase"});
+        partNames.put(EnumAnimationPart.LEFT_ARM, new String[]{"field_78113_g", "bipedLeftArm", "LA", "leftarm", "ArmL", "Arm1L", "ArmL1"});
+        partNames.put(EnumAnimationPart.RIGHT_ARM, new String[]{"field_78112_f", "bipedRightArm", "RA", "rightarm", "ArmR", "Arm1R", "ArmR1"});
+        partNames.put(EnumAnimationPart.LEFT_LEG, new String[]{"field_78124_i", "bipedLeftLeg", "LL", "leftleg", "LegL", "Leg1L", "LegL1"});
+        partNames.put(EnumAnimationPart.RIGHT_LEG, new String[]{"field_78123_h", "bipedRightLeg", "RL", "rightleg", "LegR", "Leg1R", "LegR1"});
+    }
     public static HashMap<Class<?>, Field[]> declaredFieldCache = new HashMap<>();
 
     private static final HashSet<Render> processedPlayerRenderers = new HashSet<>();

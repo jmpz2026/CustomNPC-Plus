@@ -40,19 +40,38 @@ import org.lwjgl.opengl.GL12;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import static net.minecraftforge.client.IItemRenderer.ItemRenderType.EQUIPPED_FIRST_PERSON;
 
 public class AnimationMixinFunctions {
+
+    // Body part of each ModelRenderer, found once: the reflection ran for every piece of every animated model on each frame
+    private static final Map<ModelRenderer, EnumAnimationPart> partTypes = new WeakHashMap<>();
+    private static final Set<ModelRenderer> noPartType = Collections.newSetFromMap(new WeakHashMap<ModelRenderer, Boolean>());
+    // Mod loading is over once anything renders
+    private static Boolean dbcAvailable;
+
+    public static void clearPartTypes() {
+        partTypes.clear();
+        noPartType.clear();
+    }
+
+    private static boolean dbcAvailable() {
+        if (dbcAvailable == null)
+            dbcAvailable = DBCAddon.IsAvailable();
+        return dbcAvailable;
+    }
 
     public static boolean applyValues(ModelRenderer modelRenderer) {
         if (ClientEventHandler.renderingPlayer == null && ClientEventHandler.renderingNpc == null) {
             return false;
         }
 
-        if (DBCAddon.IsAvailable()) {
+        if (dbcAvailable()) {
             if (ClientEventHandler.renderingPlayer != null) {
                 return DBCClient.Instance.applyRenderModel(modelRenderer);
             } else if (DBCClient.Instance.applyRenderModel(modelRenderer)) {
@@ -177,6 +196,19 @@ public class AnimationMixinFunctions {
     }
 
     private static EnumAnimationPart getPartType(ModelRenderer renderer) {
+        EnumAnimationPart part = partTypes.get(renderer);
+        if (part != null || noPartType.contains(renderer))
+            return part;
+
+        part = renderer.baseModel == null ? null : findPartType(renderer);
+        if (part != null)
+            partTypes.put(renderer, part);
+        else
+            noPartType.add(renderer);
+        return part;
+    }
+
+    private static EnumAnimationPart findPartType(ModelRenderer renderer) {
         Class<?> RenderClass = renderer.baseModel.getClass();
         Object model = renderer.baseModel;
 
@@ -210,7 +242,7 @@ public class AnimationMixinFunctions {
     }
 
     public static void playerFullModel_head(Entity p_78088_1_, CallbackInfo callbackInfo) {
-        if (!DBCAddon.IsAvailable() && ClientCacheHandler.playerAnimations.containsKey(p_78088_1_.getUniqueID())) {
+        if (!dbcAvailable() && ClientCacheHandler.playerAnimations.containsKey(p_78088_1_.getUniqueID())) {
             AnimationData animData = ClientCacheHandler.playerAnimations.get(p_78088_1_.getUniqueID());
             if (animData != null && animData.isActive()) {
                 Frame frame = (Frame) animData.animation.currentFrame();
@@ -229,7 +261,7 @@ public class AnimationMixinFunctions {
     }
 
     public static boolean mixin_renderFirstPersonAnimation(float partialRenderTick, EntityPlayer player, ModelBiped model, RenderBlocks renderBlocksIr, ResourceLocation resItemGlint) {
-        if (DBCAddon.IsAvailable()) {
+        if (dbcAvailable()) {
             return DBCClient.Instance.firstPersonAnimation(partialRenderTick, player, model, renderBlocksIr, resItemGlint);
         }
 

@@ -7,6 +7,7 @@ import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.client.resources.SimpleReloadableResourceManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
+import noppes.npcs.AnimationMixinFunctions;
 import noppes.npcs.CustomNpcs;
 import noppes.npcs.LogWriter;
 import noppes.npcs.client.gui.customoverlay.components.CustomOverlayLabel;
@@ -37,6 +38,7 @@ public class CustomNpcResourceListener implements
             RenderNPCInterface.clearLocalSkins();
             ClientCacheHandler.resetNpcTextures();
             CustomOverlayLabel.clearFontMetrics();
+            AnimationMixinFunctions.clearPartTypes();
 
             try {
                 DefaultTextColor = Integer.parseInt(StatCollector.translateToLocal("customnpcs.defaultTextColor"), 16);

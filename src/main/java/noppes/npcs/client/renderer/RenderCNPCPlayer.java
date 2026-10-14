@@ -18,6 +18,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraftforge.client.event.RenderPlayerEvent;
+import noppes.npcs.LogWriter;
 import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.controllers.data.SkinOverlay;
 import org.lwjgl.opengl.GL11;
@@ -278,10 +279,11 @@ public class RenderCNPCPlayer extends RenderPlayer {
         }
 
         float gender = -1F;
-        try {
-            Class<?> RenderPlayerJBRA = Class.forName("JinRyuu.JBRA.RenderPlayerJBRA");
-            gender = (float) RenderPlayerJBRA.getMethod("genGet").invoke(null);
-        } catch (Exception ignored) {
+        if (JBRA.genGet() != null) {
+            try {
+                gender = (float) JBRA.genGet().invoke(null);
+            } catch (Exception ignored) {
+            }
         }
 
         // Check if the skinOverlays map exists for this player's UUID
@@ -328,213 +330,169 @@ public class RenderCNPCPlayer extends RenderPlayer {
     }
 
     public void renderMorePlayerModel(EntityLivingBase entity, float par2, float par3, float par4, float par5, float par6, float par7) {
-        Class<?> ModelMPMClass = null;
-        Field isArmor = null;
-
-        try {
-            ModelMPMClass = Class.forName("noppes.mpm.client.model.ModelMPM");
-            isArmor = ModelMPMClass.getDeclaredField("isArmor");
-        } catch (Exception ignored) {
-        }
+        Field isArmor = MPM.isArmor();
 
         // Assuming this.modelBipedMain is an instance of ModelMPM
-        if (ModelMPMClass != null && ModelMPMClass.isInstance(this.modelBipedMain)) {
+        if (isArmor != null && isArmor.getDeclaringClass().isInstance(this.modelBipedMain)) {
             try {
-                // Set isArmor field to false
-                if (isArmor != null) {
-                    isArmor.setBoolean(this.modelBipedMain, true);
-                    this.modelBipedMain.render(entity, par2, par3, par4, par5, par6, par7);
-                    isArmor.setBoolean(this.modelBipedMain, false);
-                }
+                isArmor.setBoolean(this.modelBipedMain, true);
+                this.modelBipedMain.render(entity, par2, par3, par4, par5, par6, par7);
+                isArmor.setBoolean(this.modelBipedMain, false);
             } catch (IllegalAccessException ignored) {
             }
         }
     }
 
     public void renderDBCModel(RenderPlayerEvent.Specials.Post event) {
+        if (!JBRA.available())
+            return;
+
         EntityPlayer player = event.entityPlayer;
-
-        Class<?> RenderPlayerJBRA = null;
-        Class<?> ModelBipedDBC = null;
-        Class<?> ModelBipedBody = null;
-        Method renderDBC = null;
-        Field rot1 = null, rot2 = null, rot3 = null, rot4 = null, rot5 = null, rot6 = null;
-        Object m = null;
-        ModelRenderer bipedHead = null, bipedBody = null, bipedRA = null, bipedLA = null, bipedRL = null, bipedLL = null;
-        ModelRenderer Brightarm = null, Bleftarm = null, rightleg = null, leftleg = null, body = null, hip = null;
-        ModelRenderer waist = null, bottom = null, Bbreast = null, Bbreast2 = null, breast = null, breast2 = null;
-        float childScl = 0.0F;
+        Map<Integer, SkinOverlay> overlays = ClientCacheHandler.skinOverlays.get(player.getUniqueID());
+        if (overlays == null)
+            return;
 
         try {
-            RenderPlayerJBRA = Class.forName("JinRyuu.JBRA.RenderPlayerJBRA");
-            ModelBipedDBC = Class.forName("JinRyuu.JBRA.ModelBipedDBC");
-            ModelBipedBody = Class.forName("JinRyuu.JRMCore.entity.ModelBipedBody");
+            ModelBiped m = (ModelBiped) JBRA.modelMain.get(event.renderer);
+            m.isRiding = player.isRiding();
+            m.isChild = player.isChild();
+            m.isSneak = player.isSneaking();
+            JBRA.bodyY.set(null, JBRA.dbcY.get(null));
 
-            renderDBC = ModelBipedBody.getMethod("render", Entity.class, float.class, float.class, float.class, float.class, float.class, float.class);
-            rot1 = ModelBipedDBC.getField("rot1");
-            rot2 = ModelBipedDBC.getField("rot2");
-            rot3 = ModelBipedDBC.getField("rot3");
-            rot4 = ModelBipedDBC.getField("rot4");
-            rot5 = ModelBipedDBC.getField("rot5");
-            rot6 = ModelBipedDBC.getField("rot6");
+            ModelRenderer[] limbs = {m.bipedBody, m.bipedRightArm, m.bipedLeftArm, m.bipedRightLeg, m.bipedLeftLeg};
+            ModelRenderer[] femaleParts = new ModelRenderer[JBRA.femaleParts.length];
+            for (int i = 0; i < femaleParts.length; i++) {
+                femaleParts[i] = (ModelRenderer) JBRA.femaleParts[i].get(m);
+            }
+            float childScl = (float) JBRA.childSclGet.invoke(null);
 
-            m = RenderPlayerJBRA.getField("modelMain").get(event.renderer);
-            ModelBipedBody.getField("isRiding").set(m, player.isRiding());
-            ModelBipedBody.getField("isChild").set(m, player.isChild());
-            ModelBipedBody.getField("isSneak").set(m, player.isSneaking());
-            ModelBipedBody.getField("y").set(null, ModelBipedDBC.getField("y").get(null));
+            for (SkinOverlay overlayData : overlays.values()) {
+                if (overlayData.texture.isEmpty())
+                    continue;
 
-            bipedHead = (ModelRenderer) ModelBipedBody.getField("bipedHead").get(m);
-            bipedBody = (ModelRenderer) ModelBipedBody.getField("bipedBody").get(m);
-            bipedRA = (ModelRenderer) ModelBipedBody.getField("bipedRightArm").get(m);
-            bipedLA = (ModelRenderer) ModelBipedBody.getField("bipedLeftArm").get(m);
-            bipedRL = (ModelRenderer) ModelBipedBody.getField("bipedRightLeg").get(m);
-            bipedLL = (ModelRenderer) ModelBipedBody.getField("bipedLeftLeg").get(m);
+                ImageData imageData = ClientCacheHandler.getImageData(overlayData.texture);
+                if (!imageData.imageLoaded())
+                    continue;
 
-            Brightarm = (ModelRenderer) ModelBipedBody.getField("Brightarm").get(m);
-            Bleftarm = (ModelRenderer) ModelBipedBody.getField("Bleftarm").get(m);
-            rightleg = (ModelRenderer) ModelBipedBody.getField("rightleg").get(m);
-            leftleg = (ModelRenderer) ModelBipedBody.getField("leftleg").get(m);
-            body = (ModelRenderer) ModelBipedBody.getField("body").get(m);
-            hip = (ModelRenderer) ModelBipedBody.getField("hip").get(m);
-            waist = (ModelRenderer) ModelBipedBody.getField("waist").get(m);
-            bottom = (ModelRenderer) ModelBipedBody.getField("bottom").get(m);
-            Bbreast = (ModelRenderer) ModelBipedBody.getField("Bbreast").get(m);
-            Bbreast2 = (ModelRenderer) ModelBipedBody.getField("Bbreast2").get(m);
-            breast = (ModelRenderer) ModelBipedBody.getField("breast").get(m);
-            breast2 = (ModelRenderer) ModelBipedBody.getField("breast2").get(m);
-            childScl = (float) RenderPlayerJBRA.getMethod("childSclGet").invoke(null);
-        } catch (Exception ignored) {
-        }
+                if (!this.preRenderOverlay(overlayData, player))
+                    continue;
 
-        try {
-            RenderPlayerJBRA = Class.forName("JinRyuu.JBRA.RenderPlayerJBRA");
-            ModelBipedDBC = Class.forName("JinRyuu.JBRA.ModelBipedDBC");
-            ModelBipedBody = Class.forName("JinRyuu.JRMCore.entity.ModelBipedBody");
+                m.bipedHead.isHidden = true;
+                renderJBRA(m, player);
+                m.bipedHead.isHidden = false;
 
-            renderDBC = ModelBipedBody.getMethod("func_78088_a", Entity.class, float.class, float.class, float.class, float.class, float.class, float.class);
-            rot1 = ModelBipedDBC.getField("rot1");
-            rot2 = ModelBipedDBC.getField("rot2");
-            rot3 = ModelBipedDBC.getField("rot3");
-            rot4 = ModelBipedDBC.getField("rot4");
-            rot5 = ModelBipedDBC.getField("rot5");
-            rot6 = ModelBipedDBC.getField("rot6");
-
-            m = RenderPlayerJBRA.getField("modelMain").get(event.renderer);
-            ModelBipedBody.getField("field_78093_q").set(m, player.isRiding());
-            ModelBipedBody.getField("field_78091_s").set(m, player.isChild());
-            ModelBipedBody.getField("field_78117_n").set(m, player.isSneaking());
-            ModelBipedBody.getField("y").set(null, ModelBipedDBC.getField("y").get(null));
-
-            bipedHead = (ModelRenderer) ModelBipedBody.getField("field_78116_c").get(m);
-            bipedBody = (ModelRenderer) ModelBipedBody.getField("field_78115_e").get(m);
-            bipedRA = (ModelRenderer) ModelBipedBody.getField("field_78112_f").get(m);
-            bipedLA = (ModelRenderer) ModelBipedBody.getField("field_78113_g").get(m);
-            bipedRL = (ModelRenderer) ModelBipedBody.getField("field_78123_h").get(m);
-            bipedLL = (ModelRenderer) ModelBipedBody.getField("field_78124_i").get(m);
-
-            Brightarm = (ModelRenderer) ModelBipedBody.getField("Brightarm").get(m);
-            Bleftarm = (ModelRenderer) ModelBipedBody.getField("Bleftarm").get(m);
-            rightleg = (ModelRenderer) ModelBipedBody.getField("rightleg").get(m);
-            leftleg = (ModelRenderer) ModelBipedBody.getField("leftleg").get(m);
-            body = (ModelRenderer) ModelBipedBody.getField("body").get(m);
-            hip = (ModelRenderer) ModelBipedBody.getField("hip").get(m);
-            waist = (ModelRenderer) ModelBipedBody.getField("waist").get(m);
-            bottom = (ModelRenderer) ModelBipedBody.getField("bottom").get(m);
-            Bbreast = (ModelRenderer) ModelBipedBody.getField("Bbreast").get(m);
-            Bbreast2 = (ModelRenderer) ModelBipedBody.getField("Bbreast2").get(m);
-            breast = (ModelRenderer) ModelBipedBody.getField("breast").get(m);
-            breast2 = (ModelRenderer) ModelBipedBody.getField("breast2").get(m);
-            childScl = (float) RenderPlayerJBRA.getMethod("childSclGet").invoke(null);
-        } catch (Exception ignored) {
-        }
-
-        try {
-            if (ClientCacheHandler.skinOverlays.containsKey(player.getUniqueID())) {
-                for (SkinOverlay overlayData : ClientCacheHandler.skinOverlays.get(player.getUniqueID()).values()) {
-                    if (((SkinOverlay) overlayData).texture.isEmpty())
-                        continue;
-
-                    ImageData imageData = ClientCacheHandler.getImageData(((SkinOverlay) overlayData).texture);
-                    if (!imageData.imageLoaded())
-                        continue;
-
-                    try {
-                        imageData.bindTexture();
-                    } catch (Exception e) {
-                        continue;
-                    }
-
-                    if (!this.preRenderOverlay(overlayData, player))
-                        continue;
-
-                    bipedHead.isHidden = true;
-                    renderDBC.invoke(m, player,
-                        (float) rot1.get(m), (float) rot2.get(m), (float) rot3.get(m),
-                        (float) rot4.get(m), (float) rot5.get(m), (float) rot6.get(m)
-                    );
-                    bipedHead.isHidden = false;
-
-                    bipedBody.isHidden = true;
-                    bipedRA.isHidden = true;
-                    bipedLA.isHidden = true;
-                    bipedRL.isHidden = true;
-                    bipedLL.isHidden = true;
-                    //Female render
-                    Brightarm.isHidden = true;
-                    Bleftarm.isHidden = true;
-                    rightleg.isHidden = true;
-                    leftleg.isHidden = true;
-                    body.isHidden = true;
-                    hip.isHidden = true;
-                    waist.isHidden = true;
-                    bottom.isHidden = true;
-                    Bbreast.isHidden = true;
-                    Bbreast2.isHidden = true;
-                    breast.isHidden = true;
-                    breast2.isHidden = true;
-                    if (player.isSneaking()) {
-                        GL11.glTranslatef(0, 0.06F, 0);
-                    }
-                    if (childScl > 1.5F) {
-                        GL11.glTranslatef(0, -0.015F, 0);
+                setHidden(limbs, true);
+                //Female render
+                setHidden(femaleParts, true);
+                if (player.isSneaking()) {
+                    GL11.glTranslatef(0, 0.06F, 0);
+                }
+                if (childScl > 1.5F) {
+                    GL11.glTranslatef(0, -0.015F, 0);
+                    GL11.glScalef(1.025F, 1.025F, 1.025F);
+                } else {
+                    if (childScl > 1) {
+                        GL11.glTranslatef(0, -0.01F, 0);
                         GL11.glScalef(1.025F, 1.025F, 1.025F);
                     } else {
-                        if (childScl > 1) {
-                            GL11.glTranslatef(0, -0.01F, 0);
-                            GL11.glScalef(1.025F, 1.025F, 1.025F);
-                        } else {
-                            GL11.glTranslatef(0, 0.0025F, 0);
-                            GL11.glScalef(1.02F, 1.02F, 1.02F);
-                        }
+                        GL11.glTranslatef(0, 0.0025F, 0);
+                        GL11.glScalef(1.02F, 1.02F, 1.02F);
                     }
-                    renderDBC.invoke(m, player,
-                        (float) rot1.get(m), (float) rot2.get(m), (float) rot3.get(m),
-                        (float) rot4.get(m), (float) rot5.get(m), (float) rot6.get(m)
-                    );
-                    bipedBody.isHidden = false;
-                    bipedRA.isHidden = false;
-                    bipedLA.isHidden = false;
-                    bipedRL.isHidden = false;
-                    bipedLL.isHidden = false;
-                    //Female render
-                    Brightarm.isHidden = false;
-                    Bleftarm.isHidden = false;
-                    rightleg.isHidden = false;
-                    leftleg.isHidden = false;
-                    body.isHidden = false;
-                    hip.isHidden = false;
-                    waist.isHidden = false;
-                    bottom.isHidden = false;
-                    Bbreast.isHidden = false;
-                    Bbreast2.isHidden = false;
-                    breast.isHidden = false;
-                    breast2.isHidden = false;
-
-                    postRenderOverlay();
                 }
+                renderJBRA(m, player);
+                setHidden(limbs, false);
+                setHidden(femaleParts, false);
+
+                postRenderOverlay();
             }
         } catch (Exception ignored) {
+        }
+    }
+
+    private static void renderJBRA(ModelBiped m, EntityPlayer player) throws IllegalAccessException {
+        Field[] rot = JBRA.rot;
+        m.render(player, rot[0].getFloat(m), rot[1].getFloat(m), rot[2].getFloat(m), rot[3].getFloat(m), rot[4].getFloat(m), rot[5].getFloat(m));
+    }
+
+    private static void setHidden(ModelRenderer[] parts, boolean hidden) {
+        for (ModelRenderer part : parts) {
+            if (part != null)
+                part.isHidden = hidden;
+        }
+    }
+
+    // MorePlayerModels, looked up once instead of on every overlay render
+    private static final class MPM {
+        private static boolean resolved;
+        private static Field isArmor;
+
+        static Field isArmor() {
+            if (!resolved) {
+                resolved = true;
+                try {
+                    isArmor = Class.forName("noppes.mpm.client.model.ModelMPM").getDeclaredField("isArmor");
+                    isArmor.setAccessible(true);
+                } catch (Exception ignored) {
+                    isArmor = null;
+                }
+            }
+            return isArmor;
+        }
+    }
+
+    // JBRA through reflection, looked up once: doing it on every frame threw an exception per player
+    private static final class JBRA {
+        private static final String[] FEMALE_PARTS = {"Brightarm", "Bleftarm", "rightleg", "leftleg", "body", "hip",
+            "waist", "bottom", "Bbreast", "Bbreast2", "breast", "breast2"};
+
+        private static boolean resolved, available, genResolved;
+        static Field modelMain, bodyY, dbcY;
+        static Field[] rot, femaleParts;
+        static Method childSclGet;
+        private static Method genGet;
+
+        static boolean available() {
+            if (!resolved) {
+                resolved = true;
+                Class<?> render;
+                try {
+                    render = Class.forName("JinRyuu.JBRA.RenderPlayerJBRA");
+                } catch (Exception e) {
+                    return false;
+                }
+                try {
+                    Class<?> modelDBC = Class.forName("JinRyuu.JBRA.ModelBipedDBC");
+                    Class<?> modelBody = Class.forName("JinRyuu.JRMCore.entity.ModelBipedBody");
+                    modelMain = render.getField("modelMain");
+                    childSclGet = render.getMethod("childSclGet");
+                    rot = new Field[6];
+                    for (int i = 0; i < rot.length; i++) {
+                        rot[i] = modelDBC.getField("rot" + (i + 1));
+                    }
+                    dbcY = modelDBC.getField("y");
+                    bodyY = modelBody.getField("y");
+                    femaleParts = new Field[FEMALE_PARTS.length];
+                    for (int i = 0; i < femaleParts.length; i++) {
+                        femaleParts[i] = modelBody.getField(FEMALE_PARTS[i]);
+                    }
+                    available = true;
+                } catch (Exception e) {
+                    LogWriter.error("JBRA found but its model could not be read, skin overlays will not draw on DBC bodies", e);
+                }
+            }
+            return available;
+        }
+
+        static Method genGet() {
+            if (!genResolved) {
+                genResolved = true;
+                try {
+                    genGet = Class.forName("JinRyuu.JBRA.RenderPlayerJBRA").getMethod("genGet");
+                } catch (Exception ignored) {
+                    genGet = null;
+                }
+            }
+            return genGet;
         }
     }
 }
