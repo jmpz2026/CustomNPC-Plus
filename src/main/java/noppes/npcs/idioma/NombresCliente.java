@@ -3,6 +3,9 @@ package noppes.npcs.idioma;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.StatCollector;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Nombre y titulo de un NPC en el idioma del cliente (DBR, LANGUAGE UPDATE). Solo cliente.
  *
@@ -20,6 +23,10 @@ public final class NombresCliente {
 
     private static final String PREFIJO = "dbr.nombre.";
 
+    // Se pide en cada frame por cada nombre dibujado; cambiar de idioma recarga los recursos y lo vacia
+    private static final Map<String, String> traducidos = new ConcurrentHashMap<>();
+    private static volatile Boolean esCastellano;
+
     private NombresCliente() {
     }
 
@@ -27,14 +34,29 @@ public final class NombresCliente {
         if (nombre == null || nombre.isEmpty() || castellano()) {
             return nombre;
         }
-        String clave = PREFIJO + nombre;
-        return StatCollector.canTranslate(clave) ? StatCollector.translateToLocal(clave) : nombre;
+        String traducido = traducidos.get(nombre);
+        if (traducido == null) {
+            String clave = PREFIJO + nombre;
+            traducido = StatCollector.canTranslate(clave) ? StatCollector.translateToLocal(clave) : nombre;
+            traducidos.put(nombre, traducido);
+        }
+        return traducido;
+    }
+
+    public static void limpiar() {
+        traducidos.clear();
+        esCastellano = null;
     }
 
     private static boolean castellano() {
+        Boolean es = esCastellano;
+        if (es != null)
+            return es;
         try {
             String codigo = Minecraft.getMinecraft().getLanguageManager().getCurrentLanguage().getLanguageCode();
-            return codigo != null && codigo.toLowerCase().startsWith("es");
+            es = codigo != null && codigo.toLowerCase().startsWith("es");
+            esCastellano = es;
+            return es;
         } catch (Exception e) {
             return false;
         }

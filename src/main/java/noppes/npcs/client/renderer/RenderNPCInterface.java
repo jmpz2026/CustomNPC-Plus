@@ -49,6 +49,7 @@ public class RenderNPCInterface extends RenderLiving {
 
     public static ResourceLocation steve64 = new ResourceLocation("customnpcs", "textures/entity/64-Textures/humanmale/Steve.png");
     public static ResourceLocation alex = new ResourceLocation("customnpcs", "textures/entity/64-Textures/humanfemale/Alex.png");
+    private static final ResourceLocation ENCHANTED_GLINT = new ResourceLocation("textures/misc/enchanted_item_glint.png");
 
     public RenderNPCInterface(ModelBase model, float f) {
         super(model, f);
@@ -310,7 +311,7 @@ public class RenderNPCInterface extends RenderLiving {
 
                     if ((j & 15) == 15) {
                         f8 = (float) p_76986_1_.ticksExisted + p_76986_9_;
-                        this.bindTexture(new ResourceLocation("textures/misc/enchanted_item_glint.png"));
+                        this.bindTexture(ENCHANTED_GLINT);
                         GL11.glEnable(GL11.GL_BLEND);
                         f9 = 0.5F;
                         GL11.glColor4f(f9, f9, f9, 1.0F);

@@ -636,16 +636,21 @@ public class ClientProxy extends CommonProxy {
             ModelPartData particles = (ModelPartData) ob[1];
             EntityCustomNpc npc = (EntityCustomNpc) player;
             Minecraft minecraft = Minecraft.getMinecraft();
+            // 0 all, 1 decreased, 2 minimal; far away NPCs spawned particles nobody could see
+            int setting = minecraft.gameSettings.particleSetting;
+            if (setting == 2 || minecraft.thePlayer == null || npc.getDistanceSqToEntity(minecraft.thePlayer) > 32 * 32)
+                return;
+            int count = setting == 1 ? 1 : 2;
             double height = npc.getYOffset() + data.getBodyY();
             Random rand = npc.getRNG();
             if (particles.type == 0) {
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < count; i++) {
                     EntityEnderFX fx = new EntityEnderFX(npc, (rand.nextDouble() - 0.5D) * (double) player.width, (rand.nextDouble() * (double) player.height) - height - 0.25D, (rand.nextDouble() - 0.5D) * (double) player.width, (rand.nextDouble() - 0.5D) * 2D, -rand.nextDouble(), (rand.nextDouble() - 0.5D) * 2D, particles);
                     minecraft.effectRenderer.addEffect(fx);
                 }
 
             } else if (particles.type == 1) {
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < count; i++) {
                     double x = player.posX + (rand.nextDouble() - 0.5D) * 0.9;
                     double y = (player.posY + rand.nextDouble() * 1.9) - 0.25D - height;
                     double z = player.posZ + (rand.nextDouble() - 0.5D) * 0.9;

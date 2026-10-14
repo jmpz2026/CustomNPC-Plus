@@ -9,7 +9,7 @@ import noppes.npcs.entity.EntityNPCInterface;
 public class ModelData extends ModelDataShared {
 
     public EntityLivingBase getEntity(EntityNPCInterface npc) {
-        if (entityClass == null)
+        if (entityClass == null || entityFailed)
             return null;
         if (entity == null) {
             try {
@@ -32,6 +32,8 @@ public class ModelData extends ModelDataShared {
                         PixelmonHelper.setName(entity, "Abra");
                 }
             } catch (Exception e) {
+                entity = null;
+                entityFailed = true;
             }
         }
         return entity;

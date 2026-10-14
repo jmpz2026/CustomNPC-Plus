@@ -22,6 +22,8 @@ public class ModelDataShared implements IModelData {
 
     public Class<? extends EntityLivingBase> entityClass;
     public EntityLivingBase entity;
+    // The entity could not be built: not retried on every call until the model changes
+    protected boolean entityFailed;
 
     public NBTTagCompound extra = new NBTTagCompound();
 
@@ -127,6 +129,7 @@ public class ModelDataShared implements IModelData {
     public void setEntityClass(Class<? extends EntityLivingBase> entityClass) {
         this.entityClass = entityClass;
         entity = null;
+        entityFailed = false;
         extra = new NBTTagCompound();
         if (entityClass == EntityHorse.class)
             extra.setInteger("Type", -1);
@@ -144,6 +147,7 @@ public class ModelDataShared implements IModelData {
 
     public void clearEntity() {
         entity = null;
+        entityFailed = false;
     }
 
 
@@ -401,6 +405,7 @@ public class ModelDataShared implements IModelData {
     public void setEntity(String string) {
         entityClass = null;
         entity = null;
+        entityFailed = false;
         try {
             Class<?> cls = Class.forName(string);
             if (EntityLivingBase.class.isAssignableFrom(cls))

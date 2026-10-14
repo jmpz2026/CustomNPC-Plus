@@ -12,6 +12,7 @@ import noppes.npcs.CustomNpcs;
 import noppes.npcs.LogWriter;
 import noppes.npcs.client.gui.customoverlay.components.CustomOverlayLabel;
 import noppes.npcs.client.renderer.RenderNPCInterface;
+import noppes.npcs.idioma.NombresCliente;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -39,6 +40,7 @@ public class CustomNpcResourceListener implements
             ClientCacheHandler.resetNpcTextures();
             CustomOverlayLabel.clearFontMetrics();
             AnimationMixinFunctions.clearPartTypes();
+            NombresCliente.limpiar();
 
             try {
                 DefaultTextColor = Integer.parseInt(StatCollector.translateToLocal("customnpcs.defaultTextColor"), 16);

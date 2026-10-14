@@ -7,6 +7,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import noppes.npcs.client.renderer.MarkRenderer;
 import noppes.npcs.config.ConfigClient;
 import noppes.npcs.constants.MarkType;
 import org.lwjgl.opengl.GL11;
@@ -159,17 +160,17 @@ public class CompassHudComponent extends HudComponent {
     private ResourceLocation getTextureForMark(int type) {
         switch (type) {
             case MarkType.EXCLAMATION:
-                return new ResourceLocation("customnpcs", "textures/marks/exclamation.png");
+                return MarkRenderer.markExclamation;
             case MarkType.QUESTION:
-                return new ResourceLocation("customnpcs", "textures/marks/question.png");
+                return MarkRenderer.markQuestion;
             case MarkType.POINTER:
-                return new ResourceLocation("customnpcs", "textures/marks/pointer.png");
+                return MarkRenderer.markPointer;
             case MarkType.CROSS:
-                return new ResourceLocation("customnpcs", "textures/marks/cross.png");
+                return MarkRenderer.markCross;
             case MarkType.SKULL:
-                return new ResourceLocation("customnpcs", "textures/marks/skull.png");
+                return MarkRenderer.markSkull;
             case MarkType.STAR:
-                return new ResourceLocation("customnpcs", "textures/marks/star.png");
+                return MarkRenderer.markStar;
             default:
                 return null;
         }

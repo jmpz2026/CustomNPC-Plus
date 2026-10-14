@@ -27,7 +27,6 @@ import org.lwjgl.opengl.GL11;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.InputStream;
 
 public class RenderNPCPony extends RenderNPCInterface {
@@ -122,8 +121,8 @@ public class RenderNPCPony extends RenderNPCInterface {
                     }
                     pony.checked = loc;
                 }
-            } catch (IOException e) {
-
+            } catch (Exception e) {
+                pony.checked = loc;
             }
         }
         return loc;
