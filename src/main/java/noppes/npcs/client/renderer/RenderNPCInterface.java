@@ -11,8 +11,6 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderLiving;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
@@ -37,9 +35,10 @@ import org.lwjgl.opengl.GL12;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 
@@ -542,10 +541,9 @@ public class RenderNPCInterface extends RenderLiving {
             if (npc.display.skinType == 0) {
                 if (npc instanceof EntityCustomNpc && ((EntityCustomNpc) npc).modelData.entityClass == null) {
                     if (!(npc.display.texture).isEmpty()) {
-                        try {
-                            npc.textureLocation = adjustLocalTexture(npc, new ResourceLocation(npc.display.texture));
-                        } catch (IOException ignored) {
-                        }
+                        ResourceLocation skin = adjustLocalTexture(npc, new ResourceLocation(npc.display.texture));
+                        // A missing skin waits for a texture change or F3+T instead of being read again every frame
+                        npc.textureLocation = skin != null ? skin : fallBackSkin(npc);
                     }
                 } else {
                     npc.textureLocation = new ResourceLocation(npc.display.texture);
@@ -597,15 +595,27 @@ public class RenderNPCInterface extends RenderLiving {
         return npc.textureLocation;
     }
 
-    private ResourceLocation adjustLocalTexture(EntityNPCInterface npc, ResourceLocation location) throws IOException {
-        InputStream inputstream = null;
-        try {
-            TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
-            texturemanager.deleteTexture(location);
+    // One texture per skin path and model type, shared by every NPC that wears it
+    private static final HashMap<String, ResourceLocation> localSkins = new HashMap<>();
+    private static final HashSet<String> missingSkins = new HashSet<>();
 
-            IResource iresource = Minecraft.getMinecraft().getResourceManager().getResource(location);
-            inputstream = iresource.getInputStream();
+    public static void clearLocalSkins() {
+        for (ResourceLocation location : localSkins.values()) {
+            ClientCacheHandler.releaseTexture(location);
+        }
+        localSkins.clear();
+        missingSkins.clear();
+    }
 
+    private ResourceLocation adjustLocalTexture(EntityNPCInterface npc, ResourceLocation original) {
+        String key = (npc.display.modelType == 0 ? "skin/" : "skin64/") + md5(npc.display.texture);
+        ResourceLocation shared = localSkins.get(key);
+        if (shared != null)
+            return shared;
+        if (missingSkins.contains(key))
+            return null;
+
+        try (InputStream inputstream = Minecraft.getMinecraft().getResourceManager().getResource(original).getInputStream()) {
             BufferedImage bufferedimage = ImageIO.read(inputstream);
 
             int totalWidth = bufferedimage.getWidth();
@@ -617,26 +627,27 @@ public class RenderNPCInterface extends RenderLiving {
             ImageDownloadAlt object = new ImageDownloadAlt(null, npc.display.texture, SkinManager.field_152793_a, new ImageBufferDownloadAlt(true));
             object.setBufferedImage(bufferedimage);
 
-            try {
-                MessageDigest digest = MessageDigest.getInstance("MD5");
-                byte[] hash = digest.digest(npc.display.texture.getBytes("UTF-8"));
-                StringBuilder sb = new StringBuilder(2 * hash.length);
-                for (byte b : hash) {
-                    sb.append(String.format("%02x", b & 0xff));
-                }
-                if (npc.display.modelType == 0) {
-                    location = new ResourceLocation("skin/" + sb.toString());
-                } else {
-                    location = new ResourceLocation("skin64/" + sb.toString());
-                }
-            } catch (Exception ignored) {
-            }
-            texturemanager.loadTexture(location, object);
+            ResourceLocation location = new ResourceLocation(key);
+            Minecraft.getMinecraft().getTextureManager().loadTexture(location, object);
+            localSkins.put(key, location);
             return location;
-        } finally {
-            if (inputstream != null) {
-                inputstream.close();
+        } catch (Exception e) {
+            missingSkins.add(key);
+            return null;
+        }
+    }
+
+    private static String md5(String text) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hash = digest.digest(text.getBytes("UTF-8"));
+            StringBuilder sb = new StringBuilder(2 * hash.length);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b & 0xff));
             }
+            return sb.toString();
+        } catch (Exception e) {
+            return Integer.toHexString(text.hashCode());
         }
     }
 

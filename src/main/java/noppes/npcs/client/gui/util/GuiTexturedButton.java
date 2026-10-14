@@ -189,10 +189,10 @@ public class GuiTexturedButton extends GuiNpcButton {
     }
 
     public void getURLWidthHeight() {
-        if (imageDownloadAlt.getBufferedImage() != null) {
+        if (imageDownloadAlt.isImageReady()) {
             gotWidthHeight = true;
-            this.totalWidth = imageDownloadAlt.getBufferedImage().getWidth();
-            this.totalHeight = imageDownloadAlt.getBufferedImage().getHeight();
+            this.totalWidth = imageDownloadAlt.getImageWidth();
+            this.totalHeight = imageDownloadAlt.getImageHeight();
             correctWidthHeight();
         }
     }

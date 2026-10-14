@@ -9,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 import noppes.npcs.CustomNpcs;
 import noppes.npcs.LogWriter;
+import noppes.npcs.client.renderer.RenderNPCInterface;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -30,6 +31,10 @@ public class CustomNpcResourceListener implements
 
             FolderResourcePack pack = new FolderResourcePack(CustomNpcs.Dir);
             simplemanager.reloadResourcePack(pack);
+
+            // Edited skins in a resource pack show up after F3+T
+            RenderNPCInterface.clearLocalSkins();
+            ClientCacheHandler.resetNpcTextures();
 
             try {
                 DefaultTextColor = Integer.parseInt(StatCollector.translateToLocal("customnpcs.defaultTextColor"), 16);

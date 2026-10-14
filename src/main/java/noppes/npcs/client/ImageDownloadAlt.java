@@ -37,7 +37,10 @@ public class ImageDownloadAlt extends ThreadDownloadImageData {
     private final File cacheFile;
     private final String imageUrl;
     private final IImageBuffer imageBuffer;
-    private BufferedImage bufferedImage;
+    // Freed once it is on the GPU: only the size is kept
+    private volatile BufferedImage bufferedImage;
+    private int imageWidth;
+    private int imageHeight;
     private Thread imageThread;
     private boolean textureUploaded;
 
@@ -57,6 +60,7 @@ public class ImageDownloadAlt extends ThreadDownloadImageData {
 
                 TextureUtil.uploadTextureImage(super.getGlTextureId(), this.bufferedImage);
                 this.textureUploaded = true;
+                this.bufferedImage = null;
             }
         }
     }
@@ -67,6 +71,10 @@ public class ImageDownloadAlt extends ThreadDownloadImageData {
     }
 
     public void setBufferedImage(BufferedImage p_147641_1_) {
+        if (p_147641_1_ != null) {
+            this.imageWidth = p_147641_1_.getWidth();
+            this.imageHeight = p_147641_1_.getHeight();
+        }
         this.bufferedImage = p_147641_1_;
 
         if (this.imageBuffer != null) {
@@ -74,25 +82,37 @@ public class ImageDownloadAlt extends ThreadDownloadImageData {
         }
     }
 
-    public BufferedImage getBufferedImage() {
-        return this.bufferedImage;
+    // The image arrived, whether it is still waiting for upload or already on the GPU
+    public boolean isImageReady() {
+        return this.textureUploaded || this.bufferedImage != null;
+    }
+
+    public int getImageWidth() {
+        return this.imageWidth;
+    }
+
+    public int getImageHeight() {
+        return this.imageHeight;
     }
 
     public void loadTexture(IResourceManager resourceManager) throws IOException {
+        // A resource reload would otherwise paint the fallback texture over the uploaded image
+        if (this.textureUploaded) {
+            return;
+        }
+
         if (this.bufferedImage == null && this.textureLocation != null) {
             super.loadTexture(resourceManager);
         }
 
-        if (this.imageThread == null) {
+        // An image given by setBufferedImage has nothing to download
+        if (this.imageThread == null && this.bufferedImage == null) {
             if (this.cacheFile != null && this.cacheFile.isFile()) {
                 logger.debug("Loading http texture from local cache ({})", new Object[]{this.cacheFile});
 
                 try {
-                    this.bufferedImage = ImageIO.read(this.cacheFile);
-
-                    if (this.imageBuffer != null) {
-                        this.setBufferedImage(this.imageBuffer.parseUserSkin(this.bufferedImage));
-                    }
+                    BufferedImage cached = ImageIO.read(this.cacheFile);
+                    this.setBufferedImage(this.imageBuffer != null ? this.imageBuffer.parseUserSkin(cached) : cached);
                 } catch (IOException ioexception) {
                     logger.error("Couldn\'t load skin " + this.cacheFile, ioexception);
                     this.loadTextureFromServer();
@@ -104,6 +124,9 @@ public class ImageDownloadAlt extends ThreadDownloadImageData {
     }
 
     protected void loadTextureFromServer() {
+        if (this.imageUrl == null || !this.imageUrl.startsWith("http"))
+            return;
+
         this.imageThread = new Thread("Texture Downloader #" + threadDownloadCounter.incrementAndGet()) {
             public void run() {
                 HttpURLConnection connection = null;

@@ -18,7 +18,6 @@ public class ImageData {
     private final boolean isUrl;
 
     private ImageDownloadAlt imageDownloadAlt = null;
-    private BufferedImage bufferedImage = null;
 
     private int totalWidth, totalHeight;
     private boolean gotWidthHeight;
@@ -93,24 +92,7 @@ public class ImageData {
     }
 
     public ResourceLocation getLocation() {
-        return this.isUrl && this.imageDownloadAlt.getBufferedImage() == null ? null : this.location;
-    }
-
-    public BufferedImage getBufferedImage() {
-        if (this.bufferedImage == null) {
-            if (!this.isUrl) {
-                try {
-                    IResource iresource = Minecraft.getMinecraft().getResourceManager().getResource(location);
-                    try (InputStream inputstream = iresource.getInputStream()) {
-                        this.bufferedImage = ImageIO.read(inputstream);
-                    }
-                } catch (IOException ignored) {
-                }
-            } else {
-                this.bufferedImage = this.imageDownloadAlt.getBufferedImage();
-            }
-        }
-        return this.bufferedImage;
+        return this.isUrl && !this.imageDownloadAlt.isImageReady() ? null : this.location;
     }
 
     private void getWidthHeight() throws IOException {
@@ -138,10 +120,10 @@ public class ImageData {
     }
 
     private void getURLWidthHeight() {
-        if (this.imageDownloadAlt.getBufferedImage() != null && !this.invalid) {
+        if (this.imageDownloadAlt.isImageReady() && !this.invalid) {
             this.gotWidthHeight = true;
-            this.totalWidth = this.imageDownloadAlt.getBufferedImage().getWidth();
-            this.totalHeight = this.imageDownloadAlt.getBufferedImage().getHeight();
+            this.totalWidth = this.imageDownloadAlt.getImageWidth();
+            this.totalHeight = this.imageDownloadAlt.getImageHeight();
             correctWidthHeight();
         }
     }

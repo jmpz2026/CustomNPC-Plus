@@ -16,6 +16,7 @@ import noppes.npcs.client.gui.hud.HudComponent;
 import noppes.npcs.client.gui.select.GuiSoundSelection;
 import noppes.npcs.client.gui.select.GuiTextureSelection;
 import noppes.npcs.client.renderer.ImageData;
+import noppes.npcs.client.renderer.RenderNPCInterface;
 import noppes.npcs.controllers.data.AnimationData;
 import noppes.npcs.controllers.data.Party;
 import noppes.npcs.controllers.data.PlayerData;
@@ -154,7 +155,7 @@ public class ClientCacheHandler {
     }
 
     // NPCs keep the location of their skin, so after freeing it they must look it up again
-    private static void resetNpcTextures() {
+    public static void resetNpcTextures() {
         World world = Minecraft.getMinecraft().theWorld;
         if (world == null)
             return;
@@ -166,6 +167,7 @@ public class ClientCacheHandler {
 
     public static void clearCache() {
         clearImageData();
+        RenderNPCInterface.clearLocalSkins();
         ClientCacheHandler.customOverlays.clear();
         ClientCacheHandler.skinOverlays.clear();
         ClientCacheHandler.playerAnimations.clear();
@@ -187,6 +189,7 @@ public class ClientCacheHandler {
 
     public static void clearSkinCache() {
         clearImageData();
+        RenderNPCInterface.clearLocalSkins();
         resetNpcTextures();
         ClientCacheHandler.customOverlays.clear();
         ClientCacheHandler.skinOverlays.clear();
