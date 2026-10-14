@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.util.ResourceLocation;
+import noppes.npcs.client.ClientCacheHandler;
 import noppes.npcs.client.ImageDownloadAlt;
 
 import javax.imageio.ImageIO;
@@ -56,6 +57,13 @@ public class ImageData {
             }
         }
         return !this.invalid && this.location != null && this.gotWidthHeight;
+    }
+
+    // Downloaded textures belong to this cache; resource pack textures are shared, so they stay
+    public void release() {
+        if (this.isUrl) {
+            ClientCacheHandler.releaseTexture(this.location);
+        }
     }
 
     public boolean invalid() {

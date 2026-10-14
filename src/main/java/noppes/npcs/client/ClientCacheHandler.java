@@ -1,7 +1,12 @@
 package noppes.npcs.client;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.ITextureObject;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 import noppes.npcs.client.controllers.MusicController;
 import noppes.npcs.client.gui.customoverlay.OverlayCustom;
 import noppes.npcs.client.gui.hud.ClientHudManager;
@@ -11,13 +16,12 @@ import noppes.npcs.client.gui.hud.HudComponent;
 import noppes.npcs.client.gui.select.GuiSoundSelection;
 import noppes.npcs.client.gui.select.GuiTextureSelection;
 import noppes.npcs.client.renderer.ImageData;
-import noppes.npcs.config.ConfigClient;
 import noppes.npcs.controllers.data.AnimationData;
 import noppes.npcs.controllers.data.Party;
 import noppes.npcs.controllers.data.PlayerData;
 import noppes.npcs.controllers.data.SkinOverlay;
+import noppes.npcs.entity.EntityNPCInterface;
 import kamkeel.npcs.network.enums.EnumSyncType;
-import noppes.npcs.util.CacheHashMap;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -25,7 +29,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class ClientCacheHandler {
-    private static final CacheHashMap<String, CacheHashMap.CachedObject<ImageData>> imageDataCache = new CacheHashMap<>((long) ConfigClient.CacheLife * 60 * 1000);
+    // Lives until the player leaves the world: expiring entries never freed their GL texture and made the next use download it again
+    private static final HashMap<String, ImageData> imageDataCache = new HashMap<>();
     public static PlayerData playerData = new PlayerData();
     public static HashMap<Integer, OverlayCustom> customOverlays = new HashMap<>();
     public static HashMap<UUID, HashMap<Integer, SkinOverlay>> skinOverlays = new HashMap<>();
@@ -100,19 +105,23 @@ public class ClientCacheHandler {
 
     public static ImageData getImageData(String directory) {
         synchronized (imageDataCache) {
-            if (!imageDataCache.containsKey(directory)) {
-                imageDataCache.put(directory, new CacheHashMap.CachedObject<>(new ImageData(directory)));
+            ImageData data = imageDataCache.get(directory);
+            if (data == null) {
+                data = new ImageData(directory);
+                imageDataCache.put(directory, data);
             }
-            return imageDataCache.get(directory).getObject();
+            return data;
         }
     }
 
     public static ImageData getNPCTexture(String directory, boolean x64, ResourceLocation resource) {
         synchronized (imageDataCache) {
-            if (!imageDataCache.containsKey(resource.getResourcePath())) {
-                imageDataCache.put(resource.getResourcePath(), new CacheHashMap.CachedObject<>(new ImageData(directory, x64, resource)));
+            ImageData data = imageDataCache.get(resource.getResourcePath());
+            if (data == null) {
+                data = new ImageData(directory, x64, resource);
+                imageDataCache.put(resource.getResourcePath(), data);
             }
-            return imageDataCache.get(resource.getResourcePath()).getObject();
+            return data;
         }
     }
 
@@ -122,8 +131,41 @@ public class ClientCacheHandler {
         }
     }
 
+    private static void clearImageData() {
+        synchronized (imageDataCache) {
+            for (ImageData data : imageDataCache.values()) {
+                data.release();
+            }
+            imageDataCache.clear();
+        }
+    }
+
+    /**
+     * Frees the GL texture and drops it from the TextureManager. Its own deleteTexture keeps the map entry,
+     * so anything bound to that location afterwards would use a deleted id.
+     */
+    public static void releaseTexture(ResourceLocation location) {
+        TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
+        ITextureObject texture = textureManager.getTexture(location);
+        if (texture != null) {
+            TextureUtil.deleteTexture(texture.getGlTextureId());
+            textureManager.mapTextureObjects.remove(location);
+        }
+    }
+
+    // NPCs keep the location of their skin, so after freeing it they must look it up again
+    private static void resetNpcTextures() {
+        World world = Minecraft.getMinecraft().theWorld;
+        if (world == null)
+            return;
+        for (Object entity : world.loadedEntityList) {
+            if (entity instanceof EntityNPCInterface)
+                ((EntityNPCInterface) entity).textureLocation = null;
+        }
+    }
+
     public static void clearCache() {
-        ClientCacheHandler.imageDataCache.clear();
+        clearImageData();
         ClientCacheHandler.customOverlays.clear();
         ClientCacheHandler.skinOverlays.clear();
         ClientCacheHandler.playerAnimations.clear();
@@ -144,7 +186,8 @@ public class ClientCacheHandler {
     }
 
     public static void clearSkinCache() {
-        ClientCacheHandler.imageDataCache.clear();
+        clearImageData();
+        resetNpcTextures();
         ClientCacheHandler.customOverlays.clear();
         ClientCacheHandler.skinOverlays.clear();
 

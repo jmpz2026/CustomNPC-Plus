@@ -5,8 +5,11 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class CacheHashMap<K, V extends CacheHashMap.CachedObject<?>> extends HashMap<K, V> {
+    private static final long PRUNE_INTERVAL = 60 * 1000;
+
     private final long maxCacheTime;
     private long saveInterval;
+    private long lastPrune;
 
     public CacheHashMap(long maxCacheTime) {
         this.maxCacheTime = maxCacheTime;
@@ -21,6 +24,14 @@ public class CacheHashMap<K, V extends CacheHashMap.CachedObject<?>> extends Has
     public V get(Object key) {
         V object = super.get(key);
         object.updateTimeAccessed();
+
+        // Walking every entry on each read made a lookup O(n); pruning once a minute is enough
+        long now = System.currentTimeMillis();
+        long interval = this.saveInterval > 0 ? Math.min(PRUNE_INTERVAL, this.saveInterval / 4) : PRUNE_INTERVAL;
+        if (now - this.lastPrune < interval) {
+            return object;
+        }
+        this.lastPrune = now;
 
         Iterator<Map.Entry<K, V>> iterator = this.entrySet().iterator();
         while (iterator.hasNext()) {

@@ -20,12 +20,6 @@ public class ConfigClient {
 
 
     /**
-     * General Properties
-     **/
-    public static Property CacheLifeProperty;
-    public static int CacheLife = 10;
-
-    /**
      * Visual Properties
      **/
     public static Property EnableChatBubblesProperty;
@@ -194,8 +188,9 @@ public class ConfigClient {
 
 
             // General
-            CacheLifeProperty = config.get(GENERAL, "Cache Life", 10, "How long should downloaded imagery data be saved client side? (In minutes)");
-            CacheLife = CacheLifeProperty.getInt(10);
+            // Downloaded images now stay until leaving the world
+            if (config.hasCategory(GENERAL))
+                config.getCategory(GENERAL).remove("Cache Life");
 
             // Visual
             EnableChatBubblesProperty = config.get(VISUAL, "Enable Chat Bubbles", true, "Enable/Disable Chat Bubbles");
