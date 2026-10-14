@@ -1,5 +1,5 @@
 
-## Fork notice (branch `fork-1.10.3`)
+## Fork notice (branch `fork-1.10.4`)
 
 This branch is a modified build of CustomNPC+ **1.10.3** (commit `12696996a`, API submodule `305a377`).
 Changes from upstream:
