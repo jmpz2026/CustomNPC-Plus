@@ -125,12 +125,21 @@ public class PlayerQuestController {
         if (data.activeQuests.containsKey(quest.id))
             return false;
 
-        if (!data.finishedQuests.containsKey(quest.id) || quest.repeat == EnumQuestRepeat.REPEATABLE)
+        Long finished = data.finishedQuests.get(quest.id);
+        // A Shared completion counts from whichever slot finished it last, so switching slots
+        // can't reset it even if this slot's copy was never updated.
+        if (ConfigMain.ProfilesEnabled && quest.profileOptions.enableOptions && quest.profileOptions.completeControl == EnumProfileSync.Shared) {
+            Long shared = ProfileController.Instance.getLatestQuestCompletion(player, quest.id);
+            if (shared != null && (finished == null || shared > finished))
+                finished = shared;
+        }
+
+        if (finished == null || quest.repeat == EnumQuestRepeat.REPEATABLE)
             return true;
         if (quest.repeat == EnumQuestRepeat.NONE)
             return false;
 
-        long questTime = data.finishedQuests.get(quest.id);
+        long questTime = finished;
 
         if (quest.repeat == EnumQuestRepeat.MCDAILY) {
             return player.worldObj.getTotalWorldTime() - questTime >= 24000;

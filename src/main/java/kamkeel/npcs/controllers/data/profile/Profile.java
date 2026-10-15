@@ -15,7 +15,8 @@ public class Profile implements IProfile {
     public EntityPlayer player;
     public int currentSlotId;
     private final Map<Integer, ISlot> slots = new HashMap<>();
-    private boolean locked = false;
+    private volatile boolean locked = false;
+    private volatile boolean quarantined = false;
 
     public Profile(EntityPlayer player, NBTTagCompound compound) {
         this.player = player;
@@ -71,6 +72,19 @@ public class Profile implements IProfile {
 
     public void setLocked(boolean locked) {
         this.locked = locked;
+    }
+
+    /**
+     * The profile file exists but could not be read nor recovered. The profile lives in memory
+     * only: it is never written to disk and its slots can't be switched, so the file on disk
+     * stays intact for an admin to restore.
+     */
+    public boolean isQuarantined() {
+        return quarantined;
+    }
+
+    public void setQuarantined(boolean quarantined) {
+        this.quarantined = quarantined;
     }
 
     @Override

@@ -398,6 +398,15 @@ public class PlayerData implements IExtendedEntityProperties, IPlayerData {
     }
 
     public synchronized void save() {
+        save(false);
+    }
+
+    /** Like {@link #save()}, but the file is written on the calling thread. */
+    public synchronized void saveNow() {
+        save(true);
+    }
+
+    private void save(boolean now) {
         // Don't Save this is a Modification of a Profile's PlayerData
         Profile profile = ProfileController.Instance.getProfile(UUID.fromString(uuid));
         if (profile != null && profile.currentSlotId != this.profileSlot) {
@@ -414,24 +423,29 @@ public class PlayerData implements IExtendedEntityProperties, IPlayerData {
         }
         PlayerDataController.Instance.putPlayerMap(playername, uuid);
         PlayerDataController.Instance.putPlayerDataCache(uuid, this);
-        CustomNPCsThreader.customNPCThread.execute(() -> {
-            try {
-                File saveDir = PlayerDataController.Instance.getSaveDir();
-                File file = new File(saveDir, filename + "_new");
-                File file1 = new File(saveDir, filename);
-                if (ConfigMain.DatFormat) {
-                    CompressedStreamTools.writeCompressed(compound, new FileOutputStream(file));
-                } else {
-                    NBTJsonUtil.SaveFile(file, compound);
-                }
-                if (file1.exists()) {
-                    file1.delete();
-                }
-                file.renameTo(file1);
-            } catch (Exception e) {
-                LogWriter.except(e);
+        if (now)
+            writeFile(filename, compound);
+        else
+            CustomNPCsThreader.customNPCThread.execute(() -> writeFile(filename, compound));
+    }
+
+    private static void writeFile(String filename, NBTTagCompound compound) {
+        try {
+            File saveDir = PlayerDataController.Instance.getSaveDir();
+            File file = new File(saveDir, filename + "_new");
+            File file1 = new File(saveDir, filename);
+            if (ConfigMain.DatFormat) {
+                CompressedStreamTools.writeCompressed(compound, new FileOutputStream(file));
+            } else {
+                NBTJsonUtil.SaveFile(file, compound);
             }
-        });
+            if (file1.exists()) {
+                file1.delete();
+            }
+            file.renameTo(file1);
+        } catch (Exception e) {
+            LogWriter.except(e);
+        }
     }
 
     public void load() {

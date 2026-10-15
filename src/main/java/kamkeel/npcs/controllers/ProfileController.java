@@ -9,8 +9,12 @@ import kamkeel.npcs.controllers.data.profile.ProfileInfoEntry;
 import kamkeel.npcs.controllers.data.profile.ProfileOperation;
 import kamkeel.npcs.controllers.data.profile.Slot;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentText;
 import noppes.npcs.CustomNpcs;
 import noppes.npcs.CustomNpcsPermissions;
 import noppes.npcs.EventHooks;
@@ -22,6 +26,7 @@ import noppes.npcs.api.handler.IProfileHandler;
 import noppes.npcs.api.handler.data.IProfile;
 import noppes.npcs.api.handler.data.ISlot;
 import noppes.npcs.config.ConfigMain;
+import noppes.npcs.controllers.PlayerDataController;
 import noppes.npcs.controllers.QuestController;
 import noppes.npcs.controllers.ScriptController;
 import noppes.npcs.controllers.data.PlayerData;
@@ -29,7 +34,6 @@ import noppes.npcs.controllers.data.PlayerDataScript;
 import noppes.npcs.controllers.data.PlayerQuestData;
 import noppes.npcs.scripted.NpcAPI;
 import noppes.npcs.util.CustomNPCsThreader;
-import noppes.npcs.util.NBTJsonUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,6 +43,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static noppes.npcs.CustomNpcsPermissions.PROFILE_MAX;
 import static noppes.npcs.CustomNpcsPermissions.PROFILE_REGION_BYPASS;
@@ -74,6 +83,7 @@ public class ProfileController implements IProfileHandler {
     private static final String MSG_REGION_NOT_ALLOWED = "Profile switching not allowed from your current location.";
     private static final String MSG_CHANGE_SUCCESS = "Slot changed successfully.";
     private static final String MSG_CANCELLED = "Operation cancelled.";
+    private static final String MSG_QUARANTINED = "Profile could not be read and is in quarantine; ask an admin.";
 
     public static Map<String, IProfileData> profileTypes = new HashMap<>();
     public static Map<UUID, Profile> activeProfiles = new HashMap<>();
@@ -81,9 +91,14 @@ public class ProfileController implements IProfileHandler {
 
     public static ProfileController Instance;
 
+    /** Last backup written per player; backups are throttled so quick saves don't rotate history away. */
+    private static final Map<UUID, Long> lastBackup = new ConcurrentHashMap<>();
+    private static final long BACKUP_INTERVAL = 60 * 1000;
+
     public ProfileController() {
         Instance = this;
-        profileTypes = new HashMap<>();
+        // profileTypes is not reset here: mods that register in FMLInitializationEvent run
+        // before this constructor (FMLServerAboutToStartEvent) and would lose their type.
         activeProfiles = new HashMap<>();
     }
 
@@ -121,19 +136,26 @@ public class ProfileController implements IProfileHandler {
 
         if (player == null)
             return;
-        Profile profile;
-        if (activeProfiles.containsKey(player.getUniqueID())) {
-            profile = activeProfiles.get(player.getUniqueID());
+        Profile profile = activeProfiles.get(player.getUniqueID());
+        // A quarantined profile is read again on every login, so an admin can fix the file
+        // and the player picks it up by reconnecting.
+        if (profile != null && !profile.isQuarantined()) {
             profile.player = player;
         } else {
-            NBTTagCompound compound = load(player);
-            profile = new Profile(player, compound);
+            NBTTagCompound compound = readWithRecovery(player.getUniqueID());
+            boolean quarantined = compound == null;
+            profile = new Profile(player, quarantined ? new NBTTagCompound() : compound);
+            profile.setQuarantined(quarantined);
+
+            PlayerData pdata = PlayerData.get(player);
             if (profile.getSlots().isEmpty()) {
-                Slot defaultSlot = new Slot(0, "Default Slot");
+                // In quarantine the placeholder takes the slot the player is really on, so the
+                // live data keeps saving normally (PlayerData.save skips a mismatched slot).
+                int slotId = quarantined ? pdata.profileSlot : 0;
+                Slot defaultSlot = new Slot(slotId, quarantined ? "Slot " + slotId : "Default Slot");
                 defaultSlot.setLastLoaded(System.currentTimeMillis());
-                profile.getSlots().put(0, defaultSlot);
-                profile.currentSlotId = 0;
-                saveSlotData(player);
+                profile.getSlots().put(slotId, defaultSlot);
+                profile.currentSlotId = slotId;
             }
             if (!profile.getSlots().containsKey(profile.currentSlotId)) {
                 profile.currentSlotId = 0;
@@ -142,61 +164,112 @@ public class ProfileController implements IProfileHandler {
             profile.player = player;
             activeProfiles.put(player.getUniqueID(), profile);
 
-            PlayerData pdata = PlayerData.get(player);
             if (profile.getSlots().containsKey(pdata.profileSlot)) {
                 profile.currentSlotId = pdata.profileSlot;
             }
 
             saveSlotData(player);
-            verifySlotQuests(profile.player);
+            if (quarantined) {
+                warnQuarantine(player);
+            } else {
+                verifySlotQuests(profile.player);
+            }
         }
     }
 
     public synchronized NBTTagCompound load(EntityPlayer player) {
+        return load(player.getUniqueID());
+    }
+
+    /**
+     * Profile file contents, recovered from the pending write or the newest backup if the
+     * main file is unreadable. Empty if nothing can be read.
+     */
+    public synchronized NBTTagCompound load(UUID uuid) {
+        NBTTagCompound compound = readWithRecovery(uuid);
+        return compound != null ? compound : new NBTTagCompound();
+    }
+
+    /**
+     * Reads a profile: the main file, then the write that was in progress ({@code .dat_new}),
+     * then the newest backup.
+     *
+     * @return the compound; empty if the player has no profile yet; null if files exist but
+     * none of them can be read
+     */
+    private NBTTagCompound readWithRecovery(UUID uuid) {
         File saveDir = getProfileDir();
-        String filename = player.getUniqueID().toString() + ".dat";
-        try {
-            File file = new File(saveDir, filename);
-            if (file.exists()) {
-                return NBTJsonUtil.loadNBTData(file);
+        File main = new File(saveDir, uuid + ".dat");
+        NBTTagCompound compound = readCompressed(main);
+        if (compound != null)
+            return compound;
+
+        boolean hadFile = main.exists();
+        File pending = new File(saveDir, uuid + ".dat_new");
+        compound = readCompressed(pending);
+        if (compound != null) {
+            LogWriter.error("Profile " + uuid + ": main file unreadable or missing, recovered from " + pending.getName());
+            return compound;
+        }
+        hadFile |= pending.exists();
+
+        File[] backups = listBackups(uuid);
+        for (int i = backups.length - 1; i >= 0; i--) {
+            compound = readCompressed(backups[i]);
+            if (compound != null) {
+                LogWriter.error("Profile " + uuid + ": main file unreadable or missing, recovered from backup " + backups[i].getName());
+                return compound;
             }
-        } catch (Exception e) {
-            LogWriter.error("Error loading profile file: " + filename, e);
+        }
+        hadFile |= backups.length > 0;
+
+        if (hadFile) {
+            LogWriter.error("Profile " + uuid + ": no readable file nor backup, profile quarantined");
+            return null;
         }
         return new NBTTagCompound();
     }
 
-    public synchronized NBTTagCompound load(UUID uuid) {
-        File saveDir = getProfileDir();
-        String filename = uuid.toString() + ".dat";
-        try {
-            File file = new File(saveDir, filename);
-            if (file.exists()) {
-                return NBTJsonUtil.loadNBTData(file);
-            }
+    private static NBTTagCompound readCompressed(File file) {
+        if (!file.isFile())
+            return null;
+        try (FileInputStream in = new FileInputStream(file)) {
+            return CompressedStreamTools.readCompressed(in);
         } catch (Exception e) {
-            LogWriter.error("Error loading profile file: " + filename, e);
+            LogWriter.error("Unreadable profile file: " + file.getName(), e);
+            return null;
         }
-        return new NBTTagCompound();
+    }
+
+    /** Backups of a player, oldest first. */
+    private static File[] listBackups(UUID uuid) {
+        File dir = new File(getBackupDir(), uuid.toString());
+        File[] backups = dir.listFiles((d, name) -> name.endsWith(".dat"));
+        if (backups == null)
+            return new File[0];
+        Arrays.sort(backups, Comparator.comparingLong(File::lastModified));
+        return backups;
+    }
+
+    private void warnQuarantine(EntityPlayer player) {
+        String message = "§c[Profiles] The profile of " + player.getCommandSenderName()
+            + " could not be read and is in quarantine: it is not saved and slots can't be changed. Restore profiles/"
+            + player.getUniqueID() + ".dat and have the player reconnect.";
+        for (Object o : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
+            EntityPlayer op = (EntityPlayer) o;
+            if (CustomNpcsPermissions.hasPermission(op, CustomNpcsPermissions.PROFILE_ADMIN))
+                op.addChatMessage(new ChatComponentText(message));
+        }
     }
 
     public synchronized void saveOffline(Profile profile, UUID uuid) {
+        if (profile.isQuarantined())
+            return;
         profile.setLocked(true);
         final NBTTagCompound compound = profile.writeToNBT();
-        final String filename = uuid.toString() + ".dat";
         CustomNPCsThreader.customNPCThread.execute(() -> {
             try {
-                File saveDir = getProfileDir();
-                File fileNew = new File(saveDir, filename + "_new");
-                File fileOld = new File(saveDir, filename);
-                CompressedStreamTools.writeCompressed(compound, new FileOutputStream(fileNew));
-                if (fileOld.exists()) {
-                    fileOld.delete();
-                }
-                fileNew.renameTo(fileOld);
-                backupProfile(uuid, compound);
-            } catch (Exception e) {
-                LogWriter.except(e);
+                writeProfileFile(uuid, compound);
             } finally {
                 profile.setLocked(false);
             }
@@ -204,45 +277,59 @@ public class ProfileController implements IProfileHandler {
     }
 
     public synchronized void save(EntityPlayer player, Profile profile) {
-        profile.setLocked(true);
-        final NBTTagCompound compound = profile.writeToNBT();
-        final String filename = player.getUniqueID() + ".dat";
-        CustomNPCsThreader.customNPCThread.execute(() -> {
-            try {
-                File saveDir = getProfileDir();
-                File fileNew = new File(saveDir, filename + "_new");
-                File fileOld = new File(saveDir, filename);
-                CompressedStreamTools.writeCompressed(compound, new FileOutputStream(fileNew));
-                if (fileOld.exists()) {
-                    fileOld.delete();
-                }
-                fileNew.renameTo(fileOld);
-                if (ConfigMain.AllowProfileBackups) {
-                    backupProfile(player.getUniqueID(), compound);
-                }
-            } catch (Exception e) {
-                LogWriter.except(e);
-            } finally {
-                profile.setLocked(false);
-            }
-        });
+        saveOffline(profile, player.getUniqueID());
     }
 
-    private void backupProfile(UUID uuid, NBTTagCompound compound) {
+    /** Writes the profile on the calling thread. */
+    public synchronized void saveNow(EntityPlayer player, Profile profile) {
+        if (profile.isQuarantined())
+            return;
+        writeProfileFile(player.getUniqueID(), profile.writeToNBT());
+    }
+
+    /**
+     * Writes to {@code .dat_new} and moves it over the main file in one step, so a crash
+     * never leaves the player without a readable profile.
+     */
+    private static void writeProfileFile(UUID uuid, NBTTagCompound compound) {
+        try {
+            File saveDir = getProfileDir();
+            File fileNew = new File(saveDir, uuid + ".dat_new");
+            File file = new File(saveDir, uuid + ".dat");
+            try (FileOutputStream out = new FileOutputStream(fileNew)) {
+                CompressedStreamTools.writeCompressed(compound, out);
+            }
+            try {
+                Files.move(fileNew.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(fileNew.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (ConfigMain.AllowProfileBackups)
+                backupProfile(uuid, compound);
+        } catch (Exception e) {
+            LogWriter.error("Error saving profile " + uuid, e);
+        }
+    }
+
+    private static void backupProfile(UUID uuid, NBTTagCompound compound) {
+        long now = System.currentTimeMillis();
+        Long last = lastBackup.get(uuid);
+        if (last != null && now - last < BACKUP_INTERVAL)
+            return;
+        lastBackup.put(uuid, now);
         try {
             File backupDir = new File(getBackupDir(), uuid.toString());
             if (!backupDir.exists()) {
                 backupDir.mkdirs();
             }
-            String dateStr = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String dateStr = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date(now));
             File backupFile = new File(backupDir, dateStr + ".dat");
-            CompressedStreamTools.writeCompressed(compound, new FileOutputStream(backupFile));
-            File[] backups = backupDir.listFiles((dir, name) -> name.endsWith(".dat"));
-            if (backups != null && backups.length > ConfigMain.ProfileBackupAmount) {
-                Arrays.sort(backups, Comparator.comparingLong(File::lastModified));
-                for (int i = 0; i < backups.length - ConfigMain.ProfileBackupAmount; i++) {
-                    backups[i].delete();
-                }
+            try (FileOutputStream out = new FileOutputStream(backupFile)) {
+                CompressedStreamTools.writeCompressed(compound, out);
+            }
+            File[] backups = listBackups(uuid);
+            for (int i = 0; i < backups.length - ConfigMain.ProfileBackupAmount; i++) {
+                backups[i].delete();
             }
         } catch (Exception e) {
             LogWriter.except(e);
@@ -250,31 +337,18 @@ public class ProfileController implements IProfileHandler {
     }
 
     public boolean rollbackProfile(String username, File backupFile) {
-        UUID uuid = getUUIDFromUsername(username);
-        if (uuid == null)
+        EntityPlayer player = NoppesUtilServer.getPlayerByName(username);
+        if (player == null)
             return false;
-        try (FileInputStream fis = new FileInputStream(backupFile)) {
-            NBTTagCompound compound = CompressedStreamTools.readCompressed(fis);
-            File saveDir = getProfileDir();
-            File mainFile = new File(saveDir, uuid.toString() + ".dat");
-            File fileNew = new File(saveDir, uuid.toString() + "_new");
-            CompressedStreamTools.writeCompressed(compound, new FileOutputStream(fileNew));
-            if (mainFile.exists()) {
-                mainFile.delete();
-            }
-            fileNew.renameTo(mainFile);
-            EntityPlayer player = NoppesUtilServer.getPlayerByName(username);
-            Profile newProfile;
-            if (player != null) {
-                newProfile = new Profile(player, compound);
-                activeProfiles.put(uuid, newProfile);
-                loadSlotData(player);
-                return true;
-            }
-        } catch (Exception e) {
-            LogWriter.except(e);
-        }
-        return false;
+        UUID uuid = player.getUniqueID();
+        NBTTagCompound compound = readCompressed(backupFile);
+        if (compound == null)
+            return false;
+        writeProfileFile(uuid, compound);
+        Profile newProfile = new Profile(player, compound);
+        activeProfiles.put(uuid, newProfile);
+        loadSlotData(player);
+        return true;
     }
 
     public synchronized void logout(EntityPlayer player) {
@@ -303,8 +377,10 @@ public class ProfileController implements IProfileHandler {
     public Profile getProfile(UUID uuid) {
         if (activeProfiles.containsKey(uuid))
             return activeProfiles.get(uuid);
-        NBTTagCompound compound = load(uuid);
-        return new Profile(null, compound);
+        NBTTagCompound compound = readWithRecovery(uuid);
+        Profile profile = new Profile(null, compound != null ? compound : new NBTTagCompound());
+        profile.setQuarantined(compound == null);
+        return profile;
     }
 
     public Profile getProfile(String username) {
@@ -319,7 +395,36 @@ public class ProfileController implements IProfileHandler {
         }
     }
 
+    /**
+     * UUID of a player by name, resolved locally: the online player, then the name map of
+     * {@link PlayerDataController}, then the offline-mode UUID. Mojang is only asked when the
+     * server runs in online mode and the name is unknown here.
+     */
     public UUID getUUIDFromUsername(String username) {
+        if (username == null || username.isEmpty())
+            return null;
+        EntityPlayer online = NoppesUtilServer.getPlayerByName(username);
+        if (online != null)
+            return online.getUniqueID();
+
+        if (PlayerDataController.Instance != null) {
+            String known = PlayerDataController.Instance.getPlayerUUIDFromName(username);
+            if (known != null && !known.isEmpty()) {
+                try {
+                    return UUID.fromString(known);
+                } catch (IllegalArgumentException ignored) {
+                    // Malformed entry in the name map: fall through.
+                }
+            }
+        }
+
+        MinecraftServer server = MinecraftServer.getServer();
+        if (server != null && !server.isServerInOnlineMode())
+            return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+        return getMojangUUID(username);
+    }
+
+    private UUID getMojangUUID(String username) {
         try {
             URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + username);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -362,6 +467,9 @@ public class ProfileController implements IProfileHandler {
     }
 
     private ProfileOperation cloneSlotInternal(Profile profile, int sourceSlotId, int destinationSlotId, boolean temporary) {
+        if (profile.isQuarantined()) {
+            return ProfileOperation.locked(MSG_QUARANTINED);
+        }
         if (profile.isLocked()) {
             return ProfileOperation.locked(MSG_PROFILE_LOCKED_CLONE);
         }
@@ -398,6 +506,9 @@ public class ProfileController implements IProfileHandler {
     }
 
     private ProfileOperation removeSlotInternal(Profile profile, int slotId) {
+        if (profile.isQuarantined()) {
+            return ProfileOperation.locked(MSG_QUARANTINED);
+        }
         if (profile.isLocked()) {
             return ProfileOperation.locked(MSG_PROFILE_LOCKED_REMOVE);
         }
@@ -427,6 +538,9 @@ public class ProfileController implements IProfileHandler {
     }
 
     public ProfileOperation createSlotInternal(Profile profile) {
+        if (profile.isQuarantined()) {
+            return ProfileOperation.locked(MSG_QUARANTINED);
+        }
         if (profile.isLocked()) {
             return ProfileOperation.locked(MSG_PROFILE_LOCKED_CREATE);
         }
@@ -469,6 +583,9 @@ public class ProfileController implements IProfileHandler {
     }
 
     private ProfileOperation changeSlotInternal(Profile profile, int newSlotId) {
+        if (profile.isQuarantined()) {
+            return ProfileOperation.locked(MSG_QUARANTINED);
+        }
         if (profile.isLocked()) {
             return ProfileOperation.locked(MSG_PROFILE_LOCKED_CHANGE);
         }
@@ -531,6 +648,7 @@ public class ProfileController implements IProfileHandler {
             // overwrite the destination slot with stale data.
             saveSlotData(profile.player, profile, prevSlot);
             loadSlotData(profile.player, profile, newSlotId);
+            persistSwitch(profile.player, profile);
 
             EventHooks.onProfileChange(handler, scriptPlayer, profile, newSlotId, prevSlot, true);
         } else {
@@ -885,17 +1003,100 @@ public class ProfileController implements IProfileHandler {
         if (profile == null) {
             return;
         }
+        // The caller already updated the live data of the active slot; the other slots get
+        // the date written straight into their stored NBT.
+        String tag = new CNPCData().getTagName();
         for (ISlot slot : profile.getSlots().values()) {
-            IPlayerData playerData = getSlotPlayerData(player, slot.getId());
-            if (playerData != null) {
-                PlayerQuestData questData = (PlayerQuestData) playerData.getQuestData();
-                Long existing = questData.finishedQuests.get(questId);
-                if (existing == null || completeTime > existing) {
-                    questData.finishedQuests.put(questId, completeTime);
-                }
-                playerData.save();
-            }
+            if (slot.getId() == profile.getCurrentSlotId())
+                continue;
+            NBTTagCompound stored = slot.getComponentData(tag);
+            // A slot never played has no data yet; canQuestBeAccepted still sees the
+            // completion through getLatestQuestCompletion.
+            if (stored == null)
+                continue;
+            // Copy before editing: an async profile save may be serializing the stored compound.
+            NBTTagCompound copy = (NBTTagCompound) stored.copy();
+            if (setQuestCompletion(copy, questId, completeTime))
+                slot.setComponentData(tag, copy);
         }
         save(player, profile);
+    }
+
+    /**
+     * Most recent completion of a quest across every slot of the player, the active one
+     * included. Null if no slot finished it.
+     */
+    public Long getLatestQuestCompletion(EntityPlayer player, int questId) {
+        Profile profile = getProfile(player);
+        if (profile == null)
+            return null;
+        Long latest = PlayerData.get(player).questData.finishedQuests.get(questId);
+        String tag = new CNPCData().getTagName();
+        for (ISlot slot : profile.getSlots().values()) {
+            if (slot.getId() == profile.getCurrentSlotId())
+                continue;
+            Long time = getQuestCompletion(slot.getComponentData(tag), questId);
+            if (time != null && (latest == null || time > latest))
+                latest = time;
+        }
+        return latest;
+    }
+
+    private static Long getQuestCompletion(NBTTagCompound cnpc, int questId) {
+        if (cnpc == null)
+            return null;
+        NBTTagList list = cnpc.getCompoundTag("QuestData").getTagList("CompletedQuests", 10);
+        for (int i = 0; i < list.tagCount(); i++) {
+            NBTTagCompound entry = list.getCompoundTagAt(i);
+            if (entry.getInteger("Quest") == questId)
+                return entry.getLong("Date");
+        }
+        return null;
+    }
+
+    /** Same layout as PlayerQuestData.saveNBTData. Returns false if the slot already had a later date. */
+    private static boolean setQuestCompletion(NBTTagCompound cnpc, int questId, long time) {
+        NBTTagCompound questData = cnpc.getCompoundTag("QuestData");
+        NBTTagList list = questData.getTagList("CompletedQuests", 10);
+        boolean found = false;
+        for (int i = 0; i < list.tagCount(); i++) {
+            NBTTagCompound entry = list.getCompoundTagAt(i);
+            if (entry.getInteger("Quest") == questId) {
+                if (entry.getLong("Date") >= time)
+                    return false;
+                entry.setLong("Date", time);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            NBTTagCompound entry = new NBTTagCompound();
+            entry.setInteger("Quest", questId);
+            entry.setLong("Date", time);
+            list.appendTag(entry);
+        }
+        questData.setTag("CompletedQuests", list);
+        cnpc.setTag("QuestData", questData);
+        return true;
+    }
+
+    /**
+     * Writes everything a slot change touched right away, in this order: the vanilla player
+     * file (holds the DBC data in PlayerPersisted), the CustomNPC+ player file and the
+     * profile. Left to the autosave, a crash in between would pair one slot's DBC character
+     * with another slot's data.
+     */
+    private void persistSwitch(EntityPlayer player, Profile profile) {
+        if (player instanceof EntityPlayerMP) {
+            try {
+                MinecraftServer server = MinecraftServer.getServer();
+                if (server != null && server.worldServers != null && server.worldServers.length > 0)
+                    server.worldServers[0].getSaveHandler().getSaveHandler().writePlayerData(player);
+            } catch (Exception e) {
+                LogWriter.error("Error writing player file of " + player.getCommandSenderName() + " after slot change", e);
+            }
+        }
+        PlayerData.get(player).saveNow();
+        saveNow(player, profile);
     }
 }
