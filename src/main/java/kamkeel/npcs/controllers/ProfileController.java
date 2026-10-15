@@ -290,7 +290,14 @@ public class ProfileController implements IProfileHandler {
             return null;
         if (!activeProfiles.containsKey(player.getUniqueID()))
             login(player);
-        return activeProfiles.get(player.getUniqueID());
+        Profile profile = activeProfiles.get(player.getUniqueID());
+        // Dying (or leaving the End) replaces the EntityPlayerMP, but the profile kept the old
+        // one until the next login. A slot change after a death then saved the dead entity's
+        // NBT over the current slot and loaded the new slot into the dead entity, and the next
+        // logout wrote the old character over the new slot.
+        if (profile != null && profile.player != player && !player.worldObj.isRemote)
+            profile.player = player;
+        return profile;
     }
 
     public Profile getProfile(UUID uuid) {
