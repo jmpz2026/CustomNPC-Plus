@@ -48,6 +48,13 @@ public class ClientTickHandler {
     private final int[] ignoreKeys = new int[]{157, 29, 54, 42, 184, 56, 220, 219};
     private boolean lastSpecialKeyDown = false;
 
+    @SubscribeEvent
+    public void onRenderTick(TickEvent.RenderTickEvent event) {
+        if (event.phase == Phase.START) {
+            ClientEventHandler.nextRenderFrame();
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onClientTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();

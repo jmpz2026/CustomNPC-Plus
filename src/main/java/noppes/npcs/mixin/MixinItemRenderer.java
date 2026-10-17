@@ -28,6 +28,9 @@ public abstract class MixinItemRenderer {
     @Inject(method = "renderItemInFirstPerson", at = @At(value = "HEAD"), cancellable = true)
     public void renderItemInFirstPerson(float p_78440_1_, CallbackInfo callbackInfo) {
         EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (!AnimationMixinFunctions.showsInFirstPerson(player)) {
+            return;
+        }
         Render renderer = RenderManager.instance.getEntityRenderObject(player);
         if (renderer instanceof RendererLivingEntity && ((RendererLivingEntity) renderer).mainModel instanceof ModelBiped) {
             Render playerRenderer = RenderManager.instance.getEntityRenderObject(player);

@@ -7,6 +7,7 @@ import noppes.npcs.client.gui.util.GuiNpcTextField;
 import noppes.npcs.client.gui.util.ITextfieldListener;
 import noppes.npcs.client.gui.util.SubGuiInterface;
 import noppes.npcs.controllers.data.Frame;
+import noppes.npcs.controllers.data.FramePart;
 
 public class SubGuiAnimationFrame extends SubGuiInterface implements ITextfieldListener {
     private final Frame editingFrame;
@@ -33,11 +34,21 @@ public class SubGuiAnimationFrame extends SubGuiInterface implements ITextfieldL
             //
             //smooth - button
             this.addLabel(new GuiNpcLabel(12, "animation.smoothing", guiLeft + 5, guiTop + 63));
-            this.addButton(new GuiNpcButton(12, guiLeft + 75, guiTop + 55, 60, 20, new String[]{"animation.smooth", "animation.linear", "gui.none"}, editingFrame.smooth));
+            this.addButton(new GuiNpcButton(12, guiLeft + 75, guiTop + 55, 60, 20, smoothNames(), editingFrame.smooth));
         }
 
         this.addLabel(new GuiNpcLabel(14, "Comment", guiLeft + 5, guiTop + 106));
         this.addTextField(new GuiNpcTextField(14, this, guiLeft + 50, guiTop + 101, 120, 15, editingFrame.getComment()));
+    }
+
+    /** Old modes, then the keyframe curves of the fork (FramePart.CURVE_NAMES). */
+    public static String[] smoothNames() {
+        String[] names = new String[3 + FramePart.CURVE_NAMES.length];
+        names[0] = "animation.smooth";
+        names[1] = "animation.linear";
+        names[2] = "gui.none";
+        System.arraycopy(FramePart.CURVE_NAMES, 0, names, 3, FramePart.CURVE_NAMES.length);
+        return names;
     }
 
     @Override

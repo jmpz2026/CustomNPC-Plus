@@ -94,6 +94,8 @@ public class GuiNPCEditAnimation extends GuiModelInterface implements ITextfield
                         part.prevPivots = prevPart.prevPivots;
                         part.partialRotationTick = prevPart.partialRotationTick;
                         part.partialPivotTick = prevPart.partialPivotTick;
+                        part.rotationFrame = prevPart.rotationFrame;
+                        part.pivotFrame = prevPart.pivotFrame;
                     }
                 }
             }
@@ -191,7 +193,7 @@ public class GuiNPCEditAnimation extends GuiModelInterface implements ITextfield
         //
         //smooth - button
         this.addLabel(new GuiNpcLabel(32, "animation.smoothing", guiLeft + animationX, guiTop + animationY + 46, 0xFFFFFF));
-        this.addButton(new GuiNpcButton(32, guiLeft + animationX + 55, guiTop + animationY + 40, 65, 20, new String[]{"animation.smooth", "animation.linear", "gui.none"}, animation.smooth));
+        this.addButton(new GuiNpcButton(32, guiLeft + animationX + 55, guiTop + animationY + 40, 65, 20, noppes.npcs.client.gui.SubGuiAnimationFrame.smoothNames(), animation.smooth));
         //
         //loop - button
         this.addLabel(new GuiNpcLabel(33, "animation.loop", guiLeft + animationX, guiTop + animationY + 68, 0xFFFFFF));
@@ -346,7 +348,7 @@ public class GuiNPCEditAnimation extends GuiModelInterface implements ITextfield
                         //
                         //smooth - button
                         this.addLabel(new GuiNpcLabel(85, "animation.smoothing", guiLeft + bodyPartX, guiTop + bodyPartY + 194, 0xFFFFFF));
-                        this.addButton(new GuiNpcButton(85, guiLeft + bodyPartX + 55, guiTop + bodyPartY + 190, 60, 20, new String[]{"animation.smooth", "animation.linear", "gui.none"}, editingPart.smooth));
+                        this.addButton(new GuiNpcButton(85, guiLeft + bodyPartX + 55, guiTop + bodyPartY + 190, 60, 20, noppes.npcs.client.gui.SubGuiAnimationFrame.smoothNames(), editingPart.smooth));
                     }
                 }
             }

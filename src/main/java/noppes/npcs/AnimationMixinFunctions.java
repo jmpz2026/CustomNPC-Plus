@@ -66,6 +66,12 @@ public class AnimationMixinFunctions {
         return dbcAvailable;
     }
 
+    /** Fork DBR: an animation can ask not to move the first person arms (a gesture that would cover the view). */
+    public static boolean showsInFirstPerson(EntityPlayer player) {
+        AnimationData data = player == null ? null : ClientCacheHandler.playerAnimations.get(player.getUniqueID());
+        return data == null || data.animation == null || data.animation.firstPerson;
+    }
+
     public static boolean applyValues(ModelRenderer modelRenderer) {
         if (ClientEventHandler.renderingPlayer == null && ClientEventHandler.renderingNpc == null) {
             return false;

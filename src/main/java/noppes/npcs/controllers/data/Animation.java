@@ -33,6 +33,12 @@ public class Animation implements IAnimation {
 
     //Client-sided
     public boolean paused;
+    /** Fork DBR: goes up each time a frame is entered; a keyframe curve starts from there. */
+    public int frameEntry;
+    /** Fork DBR: false = this animation is not shown on the first person arms. */
+    public boolean firstPerson = true;
+    /** Fork DBR: >= 0 = frozen at that partial tick of the current frame (captures of a pose). */
+    public float frozenPartial = -1;
 
     public Animation() {
     }
@@ -65,6 +71,7 @@ public class Animation implements IAnimation {
     public IAnimation setFrames(IFrame[] frames) {
         this.clearFrames();
         for (IFrame frame : frames) {
+            ((Frame) frame).adopt(this);
             this.frames.add((Frame) frame);
         }
         return this;
@@ -76,11 +83,13 @@ public class Animation implements IAnimation {
     }
 
     public IAnimation addFrame(IFrame frame) {
+        ((Frame) frame).adopt(this);
         this.frames.add((Frame) frame);
         return this;
     }
 
     public IAnimation addFrame(int index, IFrame frame) {
+        ((Frame) frame).adopt(this);
         this.frames.add(index, (Frame) frame);
         return this;
     }
@@ -204,6 +213,8 @@ public class Animation implements IAnimation {
 
         this.currentFrame = compound.getInteger("CurrentFrame");
         this.currentFrameTime = compound.getInteger("CurrentFrameTime");
+        this.firstPerson = !compound.hasKey("FirstPerson") || compound.getBoolean("FirstPerson");
+        this.frameEntry++;
     }
 
     public NBTTagCompound writeToNBT() {
@@ -227,11 +238,13 @@ public class Animation implements IAnimation {
 
         compound.setInteger("CurrentFrame", currentFrame);
         compound.setInteger("CurrentFrameTime", currentFrameTime);
+        if (!firstPerson)
+            compound.setBoolean("FirstPerson", false);
         return compound;
     }
 
     public boolean increaseTime() {
-        if (paused)
+        if (paused || frozenPartial >= 0)
             return false;
 
         if (this.parent != null && this.currentFrame < this.frames.size()) {
@@ -246,6 +259,7 @@ public class Animation implements IAnimation {
             Frame nextFrame = null;
             this.currentFrameTime = 0;
             this.currentFrame++;
+            this.frameEntry++;
             if (this.currentFrame < this.frames.size()) {
                 nextFrame = this.frames.get(this.currentFrame);
             } else if (this.loop >= 0 && this.loop < this.frames.size()) {
@@ -282,6 +296,7 @@ public class Animation implements IAnimation {
     public void jumpToFrameAtTime(int frameIndex, int time) {
         this.currentFrame = frameIndex;
         this.currentFrameTime = time;
+        this.frameEntry++;
 
         Frame frame = (Frame) this.currentFrame();
         if (frame != null) {

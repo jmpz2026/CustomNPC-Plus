@@ -42,6 +42,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class ClientEventHandler {
+    /** Fork DBR: called at the start of every rendered frame. */
+    public static void nextRenderFrame() {
+        long now = System.nanoTime();
+        renderFrameScale = lastFrameNanos == 0 ? 1f : Math.min(15f, (now - lastFrameNanos) / 1.0e9f * 60f);
+        lastFrameNanos = now;
+        renderFrame++;
+    }
+
     public static final RenderCNPCPlayer renderCNPCSelf = new RenderCNPCPlayer();
     public static final RenderCNPCPlayer renderCNPCPlayer = new RenderCNPCPlayer();
     public static HashMap<Integer, Long> disabledButtonTimes = new HashMap<>();
@@ -53,6 +61,10 @@ public class ClientEventHandler {
     public static final ResourceLocation fem = new ResourceLocation("jinryuufamilyc:fem.png");
 
     public static float partialRenderTick;
+    /** Fork DBR: number of the frame being rendered, and its length in 1/60 s (old animation modes). */
+    public static long renderFrame;
+    public static float renderFrameScale = 1f;
+    private static long lastFrameNanos;
     public static RendererLivingEntity renderer;
 
     public static boolean renderingEntityInGUI;

@@ -45,8 +45,21 @@ public class Frame implements IFrame {
     }
 
     public IFrame addPart(IFramePart partConfig) {
-        this.frameParts.put(((FramePart) partConfig).getPart(), (FramePart) partConfig);
+        FramePart part = (FramePart) partConfig;
+        part.frame = this;
+        if (this.parent != null)
+            part.parent = this.parent;
+        this.frameParts.put(part.getPart(), part);
         return this;
+    }
+
+    /** Fork DBR: the keyframe curves need each part to know its frame and its animation. */
+    void adopt(Animation animation) {
+        this.parent = animation;
+        for (FramePart part : this.frameParts.values()) {
+            part.parent = animation;
+            part.frame = this;
+        }
     }
 
     public IFrame removePart(String partName) {
@@ -155,6 +168,8 @@ public class Frame implements IFrame {
                 framePart.smooth = this.smooth;
                 framePart.speed = this.speed;
             }
+            framePart.parent = this.parent;
+            framePart.frame = this;
             frameParts.put(framePart.part, framePart);
         }
         this.frameParts = frameParts;
@@ -184,7 +199,10 @@ public class Frame implements IFrame {
         Frame frame = new Frame(this.duration);
         HashMap<EnumAnimationPart, FramePart> frameParts = this.frameParts;
         for (Map.Entry<EnumAnimationPart, FramePart> entry : frameParts.entrySet()) {
-            frame.frameParts.put(entry.getKey(), entry.getValue().copy());
+            FramePart part = entry.getValue().copy();
+            part.frame = frame;
+            part.parent = this.parent;
+            frame.frameParts.put(entry.getKey(), part);
         }
         frame.parent = this.parent;
         frame.duration = this.duration;

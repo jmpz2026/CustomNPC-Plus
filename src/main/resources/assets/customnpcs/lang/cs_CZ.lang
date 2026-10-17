@@ -448,3 +448,11 @@ role.mount.sprint=Sprint
 role.mount.reset=Reset Position
 role.mount.walkspeed=Walk Speed: %s
 key.customnpcs.special=Special Key
+
+animation.firstPerson=First person
+animation.curve.linear=Linear (keyframe)
+animation.curve.in=Ease in
+animation.curve.out=Ease out
+animation.curve.inout=Ease in-out
+animation.curve.back=Overshoot
+animation.curve.sharp=Sharp

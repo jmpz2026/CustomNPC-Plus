@@ -29,6 +29,10 @@ public class SubGuiAnimationOptions extends SubGuiInterface {
         //whileMoving - button
         this.addLabel(new GuiNpcLabel(13, "animation.whileMoving", guiLeft + 5, guiTop + 76));
         this.addButton(new GuiNpcButton(13, guiLeft + 80, guiTop + 70, 30, 20, new String[]{"gui.yes", "gui.no"}, animation.whileMoving ? 0 : 1));
+        //
+        //firstPerson - button (fork DBR)
+        this.addLabel(new GuiNpcLabel(14, "animation.firstPerson", guiLeft + 5, guiTop + 96));
+        this.addButton(new GuiNpcButton(14, guiLeft + 80, guiTop + 90, 30, 20, new String[]{"gui.yes", "gui.no"}, animation.firstPerson ? 0 : 1));
     }
 
     @Override
@@ -42,6 +46,8 @@ public class SubGuiAnimationOptions extends SubGuiInterface {
             animation.whileAttacking = value == 0;
         } else if (guibutton.id == 13) {
             animation.whileMoving = value == 0;
+        } else if (guibutton.id == 14) {
+            animation.firstPerson = value == 0;
         }
 
         initGui();
