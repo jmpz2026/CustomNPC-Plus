@@ -2,6 +2,7 @@ package kamkeel.npcs.util;
 
 import kamkeel.npcs.CustomAttributes;
 import kamkeel.npcs.controllers.data.attribute.tracker.PlayerAttributeTracker;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import noppes.npcs.config.ConfigMain;
 import noppes.npcs.controllers.MagicController;
@@ -10,16 +11,30 @@ import noppes.npcs.controllers.data.MagicEntry;
 import noppes.npcs.controllers.data.PlayerData;
 import noppes.npcs.entity.EntityNPCInterface;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import static kamkeel.npcs.controllers.AttributeController.getTracker;
 
 public class AttributeAttackUtil {
     private static final Random random = new Random();
+
+    /**
+     * Oyentes de golpe critico (fork DBR): atacante y objetivo, en el hilo del servidor, cuando la
+     * tirada de {@code critical_chance} acierta. Tipos de MC y del JDK para que otros mods se
+     * registren por reflexion sin compilar contra esta version.
+     */
+    private static final List<BiConsumer<EntityPlayer, EntityLivingBase>> critListeners = new ArrayList<>();
+
+    public static void registerCritListener(BiConsumer<EntityPlayer, EntityLivingBase> listener) {
+        if (listener != null) critListeners.add(listener);
+    }
     // --- Helper Classes & Methods ---
 
     // Container for allocation results.
@@ -137,7 +152,7 @@ public class AttributeAttackUtil {
         applyMagicInteractions(result.allocation, defenderMagicIDs, magicController);
         float adjustedMagic = applyDefenderMagicDefense(result.allocation, defender, magicController);
 
-        return applyCrit(leftover + adjustedMagic, attacker);
+        return applyCrit(leftover + adjustedMagic, attacker, attackPlayer, defendPlayer);
     }
 
     /**
@@ -163,15 +178,29 @@ public class AttributeAttackUtil {
         for (float val : result.allocation.values())
             adjustedMagic += val;
 
-        return applyCrit(leftover + adjustedMagic, attacker);
+        return applyCrit(leftover + adjustedMagic, attacker, attackPlayer, npc);
     }
 
     public static float applyCrit(float damage, PlayerAttributeTracker tracker) {
+        return applyCrit(damage, tracker, null, null);
+    }
+
+    private static float applyCrit(float damage, PlayerAttributeTracker tracker, EntityPlayer attacker, EntityLivingBase target) {
         if (ConfigMain.AttributesEnabled) {
             float critChance = tracker.getAttributeValue(CustomAttributes.CRITICAL_CHANCE);
             float critBonus = tracker.getAttributeValue(CustomAttributes.CRITICAL_DAMAGE);
-            if (random.nextFloat() < (critChance / 100f))
+            if (random.nextFloat() < (critChance / 100f)) {
                 damage = (damage * (1 + (float) ConfigMain.AttributesCriticalBoost / 100f)) + critBonus;
+                if (attacker != null && target != null) {
+                    for (BiConsumer<EntityPlayer, EntityLivingBase> l : critListeners) {
+                        try {
+                            l.accept(attacker, target);
+                        } catch (RuntimeException ignored) {
+                            // un oyente roto no cambia el daño
+                        }
+                    }
+                }
+            }
         }
         return damage;
     }
