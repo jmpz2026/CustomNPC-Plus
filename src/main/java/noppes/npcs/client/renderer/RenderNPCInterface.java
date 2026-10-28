@@ -16,6 +16,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.boss.BossStatus;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderLivingEvent;
@@ -50,6 +51,24 @@ public class RenderNPCInterface extends RenderLiving {
     public static ResourceLocation steve64 = new ResourceLocation("customnpcs", "textures/entity/64-Textures/humanmale/Steve.png");
     public static ResourceLocation alex = new ResourceLocation("customnpcs", "textures/entity/64-Textures/humanfemale/Alex.png");
     private static final ResourceLocation ENCHANTED_GLINT = new ResourceLocation("textures/misc/enchanted_item_glint.png");
+
+    /**
+     * Detail level of far NPCs: past this squared distance (blocks) an NPC is drawn without its shadow and
+     * without skin overlays. 0 = off, the default; DbrOptimizer sets it (npc_lod module) from its DBC tab.
+     */
+    public static volatile double lodDistanceSq = 0;
+
+    /** Far enough for the low detail, and not the one the player fights or aims at. */
+    public static boolean isFar(Entity npc) {
+        double lod = lodDistanceSq;
+        if (lod <= 0) return false;
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityLivingBase view = mc.renderViewEntity;
+        EntityPlayer me = mc.thePlayer;
+        if (view == null || me == null || view.getDistanceSqToEntity(npc) <= lod) return false;
+        if (npc == me.getLastAttacker() || npc == me.getAITarget()) return false;
+        return mc.objectMouseOver == null || mc.objectMouseOver.entityHit != npc;
+    }
 
     public RenderNPCInterface(ModelBase model, float f) {
         super(model, f);
@@ -86,8 +105,18 @@ public class RenderNPCInterface extends RenderLiving {
 
     public void doRenderShadowAndFire(Entity par1Entity, double par2, double par4, double par6, float par8, float par9) {
         EntityNPCInterface npc = (EntityNPCInterface) par1Entity;
-        if (!npc.isKilled() && !npc.scriptInvisibleToPlayer(Minecraft.getMinecraft().thePlayer))
+        if (!npc.isKilled() && !npc.scriptInvisibleToPlayer(Minecraft.getMinecraft().thePlayer)) {
+            if (isFar(npc)) {
+                // Low detail: fire still shows, the shadow (a block scan under the NPC) does not
+                if (!npc.isBurning()) return;
+                float shadow = shadowSize;
+                shadowSize = 0;
+                super.doRenderShadowAndFire(par1Entity, par2, par4, par6, par8, par9);
+                shadowSize = shadow;
+                return;
+            }
             super.doRenderShadowAndFire(par1Entity, par2, par4, par6, par8, par9);
+        }
     }
 
     protected void renderLivingLabel(EntityNPCInterface npc, double d, double d1, double d2, int i, Object... obs) {
@@ -452,7 +481,9 @@ public class RenderNPCInterface extends RenderLiving {
             super.renderModel(entityliving, par2, par3, par4, par5, par6, par7);
         }
 
-        if (!npc.display.skinOverlayData.overlayList.isEmpty()) {
+        if (!npc.display.skinOverlayData.overlayList.isEmpty() && isFar(npc)) {
+            npc.display.overlayRenderTicks++;
+        } else if (!npc.display.skinOverlayData.overlayList.isEmpty()) {
             for (ISkinOverlay overlayData : npc.display.skinOverlayData.overlayList.values()) {
                 try {
                     if (((SkinOverlay) overlayData).texture.isEmpty())

@@ -28,6 +28,8 @@ import noppes.npcs.client.renderer.MarkRenderer;
 import noppes.npcs.client.renderer.RenderCNPCPlayer;
 import noppes.npcs.constants.EnumAnimationPart;
 import noppes.npcs.constants.MarkType;
+import noppes.npcs.controllers.data.AnimationData;
+import noppes.npcs.controllers.data.Availability;
 import noppes.npcs.controllers.data.FramePart;
 import noppes.npcs.controllers.data.MarkData;
 import noppes.npcs.controllers.data.PlayerData;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -143,8 +146,38 @@ public class ClientEventHandler {
         }
         ClientEventHandler.renderer = event.renderer;
         ClientEventHandler.partialRenderTick = Minecraft.getMinecraft().timer.renderPartialTicks;
+        if (event.entity instanceof EntityPlayer) animatedPlayerRender = isAnimating((EntityPlayer) event.entity);
 
         this.setOriginalPlayerParts(event.entity);
+    }
+
+    // Set in Pre: this player render may move model parts (CNPC+ or npcdbc animation), so Post restores them.
+    private static boolean animatedPlayerRender;
+
+    // Both writers of player parts (AnimationMixinFunctions.applyValues and npcdbc's CNPCAnimationHelper)
+    // only touch them while the player has an active animation.
+    private static boolean isAnimating(EntityPlayer player) {
+        AnimationData data = ClientCacheHandler.playerAnimations.get(player.getUniqueID());
+        return data != null && data.animation != null && data.isActive();
+    }
+
+    // Mark availability, at most once per client tick for each mark: the quest/dialog/faction checks run
+    // for every NPC every frame otherwise.
+    private static final Map<Availability, Boolean> availableThisTick = new IdentityHashMap<>();
+    private static long availabilityTick = Long.MIN_VALUE;
+
+    private static boolean isAvailable(Availability availability, EntityPlayer player) {
+        long tick = player.worldObj.getTotalWorldTime();
+        if (tick != availabilityTick) {
+            availableThisTick.clear();
+            availabilityTick = tick;
+        }
+        Boolean cached = availableThisTick.get(availability);
+        if (cached == null) {
+            cached = availability.isAvailable(player);
+            availableThisTick.put(availability, cached);
+        }
+        return cached;
     }
 
     @SubscribeEvent
@@ -180,13 +213,14 @@ public class ClientEventHandler {
             EntityPlayer player = Minecraft.getMinecraft().thePlayer;
             if (PlayerData.get(player) != null) {
                 for (MarkData.Mark m : markData.marks) {
-                    if (m.getType() != MarkType.NONE && m.availability.isAvailable(player)) {
+                    if (m.getType() != MarkType.NONE && isAvailable(m.availability, player)) {
                         MarkRenderer.render(event.entity, event.x, event.y, event.z, m);
                         break;
                     }
                 }
             }
-        } else if (event.entity instanceof EntityPlayer) {
+        } else if (event.entity instanceof EntityPlayer && (animatedPlayerRender || isAnimating((EntityPlayer) event.entity))) {
+            animatedPlayerRender = false;
             for (Map.Entry<ModelRenderer, FramePart> entry : ClientEventHandler.originalValues.entrySet()) {
                 ModelRenderer renderer = entry.getKey();
                 FramePart part = entry.getValue();
@@ -198,6 +232,8 @@ public class ClientEventHandler {
                 renderer.rotationPointZ = part.pivot[2];
             }
 
+            ClientEventHandler.playerModel = null;
+        } else if (event.entity instanceof EntityPlayer) {
             ClientEventHandler.playerModel = null;
         }
 
