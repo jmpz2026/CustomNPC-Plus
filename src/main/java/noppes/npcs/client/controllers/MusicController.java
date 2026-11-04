@@ -66,6 +66,7 @@ public class MusicController {
             this.playingSound.stopSound();
             this.sounds.remove(this.playingSound.sound);
             this.playingSound = null;
+            MusicaDbr.parar();
             this.entity = null;
             this.playDelay = 20; // Prevent immediate restart when music is stopped
         } else if (soundHandler != null) {
@@ -96,6 +97,8 @@ public class MusicController {
         this.entity = entity;
         this.offRange = offRange;
         this.sounds.put(clientSound.sound, clientSound);
+        // Gestor de musica del pack Dbr: antes de tocarlo (ver MusicaDbr).
+        MusicaDbr.adoptar(clientSound);
 
         try {
             SoundHandler soundHandler = Minecraft.getMinecraft().getSoundHandler();
@@ -123,6 +126,8 @@ public class MusicController {
         this.entity = entity;
         this.offRange = offRange;
         this.sounds.put(clientSound.sound, clientSound);
+        // Gestor de musica del pack Dbr: antes de tocarlo (ver MusicaDbr).
+        MusicaDbr.adoptar(clientSound);
 
         try {
             SoundHandler soundHandler = Minecraft.getMinecraft().getSoundHandler();
