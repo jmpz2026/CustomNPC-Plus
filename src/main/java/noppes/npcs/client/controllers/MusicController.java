@@ -9,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class MusicController {
     public static MusicController Instance;
@@ -18,6 +19,8 @@ public class MusicController {
 
     private Entity entity;
     private int offRange;
+    /** Canciones que no existen ya avisadas en el log (una vez por id). */
+    private final Set<String> desconocidas = new HashSet<>();
 
     public MusicController() {
         Instance = this;
@@ -69,12 +72,10 @@ public class MusicController {
             MusicaDbr.parar();
             this.entity = null;
             this.playDelay = 20; // Prevent immediate restart when music is stopped
-        } else if (soundHandler != null) {
-            try {
-                soundHandler.stopSounds();
-            } catch (Exception ignored) {
-            }
         }
+        // Dbr: sin sonido propio no se para nada. Antes llamaba a SoundHandler.stopSounds(), que corta
+        // TODOS los sonidos del juego (la musica de las cinematicas del pack); con un bardo cuya
+        // cancion no existe pasaba cada segundo (DbrServerPack/PLAN-musica-blindada.md).
     }
 
     public void playMusicJukebox(String music, Entity entity, int offRange) {
@@ -82,6 +83,9 @@ public class MusicController {
             return;
         }
         this.playDelay = 20;
+        if (!existe(music, entity)) {
+            return;
+        }
 
         if (this.isPlaying(music)) {
             return;
@@ -113,6 +117,9 @@ public class MusicController {
             return;
         }
         this.playDelay = 20;
+        if (!existe(music, entity)) {
+            return;
+        }
 
         if (this.isPlaying(music)) {
             return;
@@ -157,6 +164,24 @@ public class MusicController {
             return;
         }
         this.sounds.put(clientSound.sound, clientSound);
+    }
+
+    /**
+     * Dbr: una cancion que no esta en ningun sounds.json no se intenta tocar (vanilla solo avisa
+     * "Unable to play unknown soundEvent" y el bardo lo reintentaba cada segundo). Se avisa una vez
+     * por id, con el NPC que la pide, para cambiarsela.
+     */
+    private boolean existe(String music, Entity entity) {
+        if (music == null || music.isEmpty()) return false;
+        ResourceLocation id = new ResourceLocation(music);
+        if (Minecraft.getMinecraft().getSoundHandler().getSound(id) != null) return true;
+        if (this.desconocidas.add(id.toString())) {
+            String quien = entity == null ? "?" : entity.getCommandSenderName() + " en "
+                + (int) Math.floor(entity.posX) + "," + (int) Math.floor(entity.posY) + "," + (int) Math.floor(entity.posZ)
+                + " (dim " + entity.dimension + ")";
+            noppes.npcs.LogWriter.info("[Dbr] cancion desconocida '" + id + "' pedida por " + quien + "; no se toca");
+        }
+        return false;
     }
 
     public boolean isPlaying(String music) {

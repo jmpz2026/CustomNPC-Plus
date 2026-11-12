@@ -67,9 +67,19 @@ public class ScriptSoundController {
         }
     }
 
+    /**
+     * Dbr: para solo los sonidos de scripts. Antes llamaba a SoundHandler.stopSounds(), que corta
+     * todos los del juego (DbrServerPack/PLAN-musica-blindada.md).
+     */
     public void stopAllSounds() {
         SoundHandler soundHandler = Minecraft.getMinecraft().getSoundHandler();
-        soundHandler.stopSounds();
+        for (ScriptClientSound sound : sounds.values()) {
+            try {
+                soundHandler.stopSound(sound);
+            } catch (Exception ignored) {
+            }
+            sound.stopSound();
+        }
         sounds.clear();
     }
 }
