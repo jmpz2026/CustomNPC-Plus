@@ -26,6 +26,15 @@ public final class ClientAnimationApi {
     private ClientAnimationApi() {
     }
 
+    /**
+     * The pose values ({pivotX, pivotY, pivotZ, angleX, angleY, angleZ}) that the last render of this part
+     * applied, or null if it had no pose. Render puts the rest values back when it ends, so a mod that reads the
+     * part after rendering it (postRender) uses these instead. Same array every call: read it, do not keep it.
+     */
+    public static float[] posed(net.minecraft.client.model.ModelRenderer part) {
+        return part instanceof IPosado ? ((IPosado) part).dbr$posado() : null;
+    }
+
     /** Plays the animation on a player or a CustomNPC+ NPC. False if the entity cannot be animated. */
     public static boolean play(Entity entity, NBTTagCompound animation) {
         AnimationData data = data(entity, true);

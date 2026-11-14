@@ -5,15 +5,17 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;
 import noppes.npcs.AnimationMixinFunctions;
+import noppes.npcs.client.IPosado;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.List;
 
 @Mixin(value = ModelRenderer.class)
-public abstract class MixinModelRenderer {
+public abstract class MixinModelRenderer implements IPosado {
     @Shadow
     public float rotationPointX;
     @Shadow
@@ -49,6 +51,17 @@ public abstract class MixinModelRenderer {
     @Shadow
     public ModelBase baseModel;
 
+    /** Fork DBR (IPosado): the pose values of the last render, valid while dbr$hayPosado. */
+    @Unique
+    private final float[] dbr$valores = new float[6];
+    @Unique
+    private boolean dbr$hayPosado;
+
+    @Override
+    public float[] dbr$posado() {
+        return dbr$hayPosado ? dbr$valores : null;
+    }
+
     /**
      * @author Someone
      * @reason Because we need it
@@ -73,6 +86,18 @@ public abstract class MixinModelRenderer {
                 try {
                     changedAngles = AnimationMixinFunctions.applyValues((ModelRenderer) (Object) this);
                 } catch (Exception ignored) {
+                }
+                // npcdbc (CNPCAnimationHelper) pone la pose y devuelve false sin devolver los campos: cuenta igual.
+                this.dbr$hayPosado = changedAngles || this.rotateAngleX != prevAngleX || this.rotateAngleY != prevAngleY
+                        || this.rotateAngleZ != prevAngleZ || this.rotationPointX != prevPointX
+                        || this.rotationPointY != prevPointY || this.rotationPointZ != prevPointZ;
+                if (this.dbr$hayPosado) {
+                    this.dbr$valores[0] = this.rotationPointX;
+                    this.dbr$valores[1] = this.rotationPointY;
+                    this.dbr$valores[2] = this.rotationPointZ;
+                    this.dbr$valores[3] = this.rotateAngleX;
+                    this.dbr$valores[4] = this.rotateAngleY;
+                    this.dbr$valores[5] = this.rotateAngleZ;
                 }
 
                 GL11.glTranslatef(this.offsetX, this.offsetY, this.offsetZ);
