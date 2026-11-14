@@ -64,6 +64,21 @@ public final class ClientAnimationApi {
         }
         Animation anim = data.animation;
         tick = Math.max(0, tick);
+        // Fork DBR: with a loop, past the end goes back into the loop like increaseTime does (before,
+        // any tick past the end froze on the last pose: a looping tremble was always at its first phase).
+        boolean looped = false;
+        if (anim.loop >= 0 && anim.loop < anim.frames.size()) {
+            int total = 0, loopStart = 0;
+            for (int i = 0; i < anim.frames.size(); i++) {
+                if (i == anim.loop) loopStart = total;
+                total += anim.frames.get(i).duration;
+            }
+            int loopLength = total - loopStart;
+            if (loopLength > 0 && tick >= total) {
+                tick = loopStart + (tick - loopStart) % loopLength;
+                looped = true;
+            }
+        }
         int whole = (int) Math.floor(tick);
         float frac = tick - whole;
         int frame = 0;
@@ -76,7 +91,9 @@ public final class ClientAnimationApi {
             whole = Math.max(0, current.duration - 1);
             frac = 1f;
         }
-        Frame previous = frame > 0 ? anim.frames.get(frame - 1) : null;
+        // Back at the loop frame, increaseTime comes from the last frame, not from the one before it.
+        Frame previous = looped && frame == anim.loop ? anim.frames.get(anim.frames.size() - 1)
+                : frame > 0 ? anim.frames.get(frame - 1) : null;
         float pi = (float) Math.PI / 180;
         for (FramePart part : current.frameParts.values()) {
             FramePart before = previous == null ? null : previous.frameParts.get(part.part);
