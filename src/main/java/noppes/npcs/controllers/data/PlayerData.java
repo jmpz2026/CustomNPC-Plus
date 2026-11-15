@@ -42,8 +42,14 @@ import noppes.npcs.util.NBTJsonUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PlayerData implements IExtendedEntityProperties, IPlayerData {
     public PlayerDialogData dialogData = new PlayerDialogData(this);
@@ -84,6 +90,10 @@ public class PlayerData implements IExtendedEntityProperties, IPlayerData {
     public ScreenSize screenSize = new ScreenSize(-1, -1);
 
     public int profileSlot = 0;
+
+    /** Order of player data snapshots; a write older than the last one on disk is dropped. */
+    private static final AtomicLong writeSeq = new AtomicLong();
+    private static final Map<String, Long> lastWritten = new HashMap<>();
     private boolean specialKeyDown = false;
 
     public void onLogin() {
@@ -415,6 +425,7 @@ public class PlayerData implements IExtendedEntityProperties, IPlayerData {
         }
 
         final NBTTagCompound compound = getNBT();
+        final long seq = writeSeq.incrementAndGet();
         final String filename;
         if (ConfigMain.DatFormat) {
             filename = uuid + ".dat";
@@ -424,27 +435,40 @@ public class PlayerData implements IExtendedEntityProperties, IPlayerData {
         PlayerDataController.Instance.putPlayerMap(playername, uuid);
         PlayerDataController.Instance.putPlayerDataCache(uuid, this);
         if (now)
-            writeFile(filename, compound);
+            writeFile(filename, compound, seq);
         else
-            CustomNPCsThreader.customNPCThread.execute(() -> writeFile(filename, compound));
+            CustomNPCsThreader.customNPCThread.execute(() -> writeFile(filename, compound, seq));
     }
 
-    private static void writeFile(String filename, NBTTagCompound compound) {
+    /**
+     * Synchronized because the async {@link #save()} and {@link #saveNow()} share the same
+     * {@code _new} file. {@code seq} is taken when the snapshot is made, so an async write
+     * that arrives after a newer synchronous one does not overwrite it with older data.
+     * The move replaces the main file in one step, so it is never missing.
+     */
+    private static synchronized void writeFile(String filename, NBTTagCompound compound, long seq) {
+        Long last = lastWritten.get(filename);
+        if (last != null && last > seq)
+            return;
+        lastWritten.put(filename, seq);
         try {
             File saveDir = PlayerDataController.Instance.getSaveDir();
             File file = new File(saveDir, filename + "_new");
             File file1 = new File(saveDir, filename);
             if (ConfigMain.DatFormat) {
-                CompressedStreamTools.writeCompressed(compound, new FileOutputStream(file));
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    CompressedStreamTools.writeCompressed(compound, out);
+                }
             } else {
                 NBTJsonUtil.SaveFile(file, compound);
             }
-            if (file1.exists()) {
-                file1.delete();
+            try {
+                Files.move(file.toPath(), file1.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(file.toPath(), file1.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
-            file.renameTo(file1);
         } catch (Exception e) {
-            LogWriter.except(e);
+            LogWriter.error("Error saving player data " + filename, e);
         }
     }
 

@@ -234,18 +234,31 @@ public class PlayerDataController {
         }
         try {
             File file = new File(saveDir, filename);
-            if (file.exists()) {
-                if (ConfigMain.DatFormat) {
-                    return NBTJsonUtil.loadNBTData(file);
-                } else {
-                    return NBTJsonUtil.LoadFile(file);
-                }
-            }
+            if (file.exists())
+                return readPlayerFile(file);
         } catch (Exception e) {
             LogWriter.error("Error loading: " + filename, e);
         }
 
+        // A save that stopped before its final move leaves the data in the _new file.
+        try {
+            File pending = new File(saveDir, filename + "_new");
+            if (pending.exists()) {
+                NBTTagCompound compound = readPlayerFile(pending);
+                LogWriter.info("Recovered player data from " + pending.getName());
+                return compound;
+            }
+        } catch (Exception e) {
+            LogWriter.error("Error loading: " + filename + "_new", e);
+        }
+
         return new NBTTagCompound();
+    }
+
+    private static NBTTagCompound readPlayerFile(File file) throws Exception {
+        if (ConfigMain.DatFormat)
+            return NBTJsonUtil.loadNBTData(file);
+        return NBTJsonUtil.LoadFile(file);
     }
 
     public void putPlayerDataCache(final String uuid, final PlayerData playerCompound) {

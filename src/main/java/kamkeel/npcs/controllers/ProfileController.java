@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static noppes.npcs.CustomNpcsPermissions.PROFILE_MAX;
 import static noppes.npcs.CustomNpcsPermissions.PROFILE_REGION_BYPASS;
@@ -94,6 +95,9 @@ public class ProfileController implements IProfileHandler {
     /** Last backup written per player; backups are throttled so quick saves don't rotate history away. */
     private static final Map<UUID, Long> lastBackup = new ConcurrentHashMap<>();
     private static final long BACKUP_INTERVAL = 60 * 1000;
+    /** Order of profile snapshots; a write older than the last one on disk is dropped. */
+    private static final AtomicLong writeSeq = new AtomicLong();
+    private static final Map<UUID, Long> lastWritten = new HashMap<>();
 
     public ProfileController() {
         Instance = this;
@@ -267,9 +271,10 @@ public class ProfileController implements IProfileHandler {
             return;
         profile.setLocked(true);
         final NBTTagCompound compound = profile.writeToNBT();
+        final long seq = writeSeq.incrementAndGet();
         CustomNPCsThreader.customNPCThread.execute(() -> {
             try {
-                writeProfileFile(uuid, compound);
+                writeProfileFile(uuid, compound, seq);
             } finally {
                 profile.setLocked(false);
             }
@@ -292,6 +297,20 @@ public class ProfileController implements IProfileHandler {
      * never leaves the player without a readable profile.
      */
     private static void writeProfileFile(UUID uuid, NBTTagCompound compound) {
+        writeProfileFile(uuid, compound, writeSeq.incrementAndGet());
+    }
+
+    /**
+     * Synchronized because the async save and {@link #saveNow} share the same
+     * {@code .dat_new}: run together, one moved the file away from under the other.
+     * {@code seq} is taken when the snapshot is made, so an async write that arrives
+     * after a newer synchronous one does not overwrite it with older data.
+     */
+    private static synchronized void writeProfileFile(UUID uuid, NBTTagCompound compound, long seq) {
+        Long last = lastWritten.get(uuid);
+        if (last != null && last > seq)
+            return;
+        lastWritten.put(uuid, seq);
         try {
             File saveDir = getProfileDir();
             File fileNew = new File(saveDir, uuid + ".dat_new");
