@@ -679,6 +679,10 @@ bard.background=Play as background
 bard.ondistance=On Distance
 bard.offdistance=Off Distance
 bard.hasoff=Has Off Distance
+bard.seg=Sec
+bard.silencio=Gap (ms)
+bard.modo.orden=Playlist: in order
+bard.modo.aleatorio=Playlist: shuffle, no repeats
 
 dialog.dialog=Dialog
 dialog.dialogs=Dialogs

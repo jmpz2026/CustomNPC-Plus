@@ -38,6 +38,9 @@ dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.91-GTNH:dev")
     runtimeOnlyNonPublishable("curse.maven:Nashorn-374413:2924946")
 
+    // Tests unitarios de clases puras (ListaBardo). Sin servidor.
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+
     if(embedMixin){
         // Normal Jar will include built in Mixins
         shadowImplementation("org.spongepowered:mixin:0.7.11-SNAPSHOT"){
@@ -49,4 +52,8 @@ dependencies {
             exclude module: 'log4j-core'
         }
     }
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }

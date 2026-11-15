@@ -1,6 +1,7 @@
 package noppes.npcs.client.controllers;
 
 import net.minecraft.client.audio.ISound;
+import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Method;
 
@@ -13,11 +14,11 @@ import java.lang.reflect.Method;
  * <p>Por reflexion, con los {@code Method} en cache: sin el pack Dbr esto no hace nada y la musica
  * suena como siempre.
  */
-final class MusicaDbr {
+public final class MusicaDbr {
 
     private static boolean buscado;
     private static Object fuenteNpc;
-    private static Method adoptar, parar;
+    private static Method adoptar, parar, tocarDesde, hayGestor, activa;
 
     private MusicaDbr() {
     }
@@ -39,6 +40,50 @@ final class MusicaDbr {
         }
     }
 
+    /**
+     * Hay gestor y sabe empezar a mitad de pista (DbrCore con {@code tocarDesde}). Si no, el bardo
+     * con playlist usa el {@link MusicController} viejo, desde 0.
+     */
+    public static boolean puedeSaltar() {
+        if (!buscar() || tocarDesde == null || hayGestor == null) return false;
+        try {
+            return Boolean.TRUE.equals(hayGestor.invoke(null));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Toca {@code pista} en la capa NPC empezando en {@code desdeMs}. false si no se pudo. */
+    public static boolean tocarDesde(String pista, int desdeMs, int fundidoMs) {
+        if (!puedeSaltar()) return false;
+        try {
+            Object r = tocarDesde.invoke(null, fuenteNpc, new ResourceLocation(pista), false,
+                    Math.max(0, desdeMs), Math.max(0, fundidoMs), 1f);
+            return Boolean.TRUE.equals(r);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Para la capa NPC con fundido. */
+    public static void pararCon(int fundidoMs) {
+        if (!buscar()) return;
+        try {
+            parar.invoke(null, fuenteNpc, Math.max(0, fundidoMs));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Suena algo en la capa NPC. */
+    public static boolean activaNpc() {
+        if (!buscar() || activa == null) return false;
+        try {
+            return Boolean.TRUE.equals(activa.invoke(null, fuenteNpc));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static boolean buscar() {
         if (!buscado) {
@@ -49,6 +94,15 @@ final class MusicaDbr {
                 adoptar = c.getMethod("adoptar", f, Object.class);
                 parar = c.getMethod("parar", f, int.class);
                 fuenteNpc = Enum.valueOf(f, "NPC");
+                // Opcionales: un DbrCore viejo no los tiene y el bardo usa el camino viejo.
+                try {
+                    tocarDesde = c.getMethod("tocarDesde", f, ResourceLocation.class, boolean.class,
+                            int.class, int.class, float.class);
+                    hayGestor = c.getMethod("hayGestor");
+                    activa = c.getMethod("activa", f);
+                } catch (Throwable t) {
+                    tocarDesde = null;
+                }
             } catch (Throwable t) {
                 fuenteNpc = null;
             }

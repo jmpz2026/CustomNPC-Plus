@@ -440,6 +440,8 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
                 if (linkedData != null && linkedData.time > linkedLast) {
                     LinkedNpcController.Instance.loadNpcData(this);
                 }
+                if (advanced.job == EnumJobType.Bard && jobInterface instanceof JobBard)
+                    ((JobBard) jobInterface).tickServidor();
                 if (updateClient) {
                     this.updateClient();
                 }
@@ -1804,6 +1806,7 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
         if (advanced.job == EnumJobType.Bard) {
             NBTTagCompound bard = new NBTTagCompound();
             jobInterface.writeToNBT(bard);
+            if (jobInterface instanceof JobBard) ((JobBard) jobInterface).escribirEstado(bard);
             compound.setTag("Bard", bard);
         }
         if (advanced.role == EnumRoleType.Companion) {
@@ -1848,6 +1851,7 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
         if (advanced.job == EnumJobType.Bard) {
             NBTTagCompound bard = compound.getCompoundTag("Bard");
             jobInterface.readFromNBT(bard);
+            if (jobInterface instanceof JobBard) ((JobBard) jobInterface).leerEstado(bard);
         }
         if (advanced.role == EnumRoleType.Companion) {
             NBTTagCompound companion = compound.getCompoundTag("Companion");
