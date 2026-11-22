@@ -1796,6 +1796,12 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
         compound.setTag("Armor", NBTTags.nbtItemStackList(inventory.getArmor()));
         compound.setTag("Weapons", NBTTags.nbtItemStackList(inventory.getWeapons()));
         compound.setInteger("Speed", ais.getWalkingSpeed());
+        // Vuelo: sin esto el cliente cree que un NPC volador es de tierra, le aplica gravedad y lo
+        // dibuja en el suelo mientras el servidor lo tiene flotando (hitbox varios bloques mas arriba).
+        compound.setInteger("MovingType", ais.movementType);
+        compound.setDouble("FlyGravity", ais.flyGravity);
+        compound.setBoolean("HasFlyLimit", ais.hasFlyLimit);
+        compound.setInteger("FlyHeightLimit", ais.flyHeightLimit);
         compound.setBoolean("DeadBody", stats.hideKilledBody);
         compound.setInteger("StandingState", ais.standingType.ordinal());
         compound.setInteger("MovingState", ais.movingType.ordinal());
@@ -1837,6 +1843,12 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
     public void readSpawnData(NBTTagCompound compound) {
         stats.maxHealth = compound.getDouble("MaxHealth");
         ais.setWalkingSpeed(compound.getInteger("Speed"));
+        if (compound.hasKey("MovingType")) {
+            ais.movementType = compound.getInteger("MovingType");
+            ais.flyGravity = compound.getDouble("FlyGravity");
+            ais.hasFlyLimit = compound.getBoolean("HasFlyLimit");
+            ais.flyHeightLimit = compound.getInteger("FlyHeightLimit");
+        }
         stats.hideKilledBody = compound.getBoolean("DeadBody");
         ais.standingType = EnumStandingType.values()[compound.getInteger("StandingState") % EnumStandingType.values().length];
         ais.movingType = EnumMovingType.values()[compound.getInteger("MovingState") % EnumMovingType.values().length];
