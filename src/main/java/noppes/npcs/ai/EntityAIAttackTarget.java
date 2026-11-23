@@ -57,7 +57,8 @@ public class EntityAIAttackTarget extends EntityAIBase {
             return false;
         } else {
             this.entityTarget = entitylivingbase;
-            this.npc.getEntityAttribute(SharedMonsterAttributes.followRange).setBaseValue(((EntityNPCInterface) this.npc).stats.aggroRange);
+            // Dbr (GENERAL UPDATE P2): a quien le pego lo busca hasta NpcNavRange, no solo aggroRange
+            this.npc.getEntityAttribute(SharedMonsterAttributes.followRange).setBaseValue(this.npc.combatHandler.rango(entitylivingbase));
             this.entityPathEntity = this.npc.getNavigator().getPathToEntityLiving(entitylivingbase);
             this.npc.getEntityAttribute(SharedMonsterAttributes.followRange).setBaseValue(ConfigMain.NpcNavRange);
             return this.entityPathEntity != null;
@@ -76,7 +77,7 @@ public class EntityAIAttackTarget extends EntityAIBase {
         if (entityTarget instanceof EntityPlayer && DBCAddon.instance.isKO(npc, (EntityPlayer) this.entityTarget))
             return false;
 
-        if (npc.getDistanceToEntity(entityTarget) > npc.stats.aggroRange)
+        if (npc.getDistanceToEntity(entityTarget) > npc.combatHandler.rango(entityTarget))
             return false;
         if (this.npc.ais.useRangeMelee == 1 && npc.getDistanceSqToEntity(entityTarget) > (this.npc.ais.distanceToMelee * this.npc.ais.distanceToMelee))
             return false;

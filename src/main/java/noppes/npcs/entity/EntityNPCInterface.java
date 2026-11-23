@@ -732,7 +732,9 @@ public abstract class EntityNPCInterface extends EntityCreature implements IEnti
                     if (npc.canSee(this) || npc.ais.directLOS || npc.canSee(attackingEntity))
                         npc.onAttack(attackingEntity);
                 }
-                setAttackTarget(attackingEntity);
+                // Dbr (GENERAL UPDATE P2): a quien dejo por lejos o por no llegar no lo vuelve a fijar
+                if (!combatHandler.estaFuera(attackingEntity))
+                    setAttackTarget(attackingEntity);
             }
             return super.attackEntityFrom(damagesource, i);
         } finally {

@@ -115,6 +115,9 @@ public class ConfigMain {
 
     public static Property NpcNavRangeProperty;
     public static int NpcNavRange = 32;
+    /** Dbr (GENERAL UPDATE P2), ver {@link noppes.npcs.ai.CombatHandler}. */
+    public static boolean DbrPersecucion = true;
+    public static int DbrSegundosSinLlegar = 5;
 
     public static Property NpcSizeLimitProperty;
     public static int NpcSizeLimit = 100;
@@ -190,6 +193,10 @@ public class ConfigMain {
             // NPC
             NpcNavRangeProperty = config.get(NPC, "NPC Navigation Range", 32, "Navigation search range for NPCs. Not recommended to increase if you have a slow pc or on a server. Minimum of 16, maximum of 96.");
             NpcNavRange = NpcNavRangeProperty.getInt(32);
+
+            // Dbr (GENERAL UPDATE P2): persecucion y salida de combate de los NPC que se defienden
+            DbrPersecucion = config.get(NPC, "Dbr Chase Attacker", true, "Dbr: an NPC that fights back chases whoever hit it up to 'NPC Navigation Range' blocks. If the attacker is farther, or the NPC cannot reach it for 'Dbr Unreachable Seconds' in a row, the NPC leaves combat (even if still being hit) and regenerates with its Health Regen.").getBoolean(true);
+            DbrSegundosSinLlegar = config.get(NPC, "Dbr Unreachable Seconds", 5, "Dbr: seconds in a row without reaching the attacker before leaving combat.").getInt(5);
 
             OpsOnlyProperty = config.get(NPC, "Only Ops Edit NPCs", false, "Only ops can create and edit npcs");
             OpsOnly = OpsOnlyProperty.getBoolean(false);

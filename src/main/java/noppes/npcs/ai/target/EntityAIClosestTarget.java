@@ -8,6 +8,7 @@ import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.util.MathHelper;
+import noppes.npcs.ai.CombatHandler;
 import noppes.npcs.config.ConfigMain;
 import noppes.npcs.entity.EntityNPCInterface;
 
@@ -54,12 +55,15 @@ public class EntityAIClosestTarget extends EntityAITarget {
             List list = this.taskOwner.worldObj.selectEntitiesWithinAABB(this.targetClass, this.taskOwner.boundingBox.expand(d0, MathHelper.ceiling_double_int(d0 / 2.0D), d0), this.field_82643_g);
             Collections.sort(list, this.theNearestAttackableTargetSorter);
             taskOwner.getEntityAttribute(SharedMonsterAttributes.followRange).setBaseValue(ConfigMain.NpcNavRange);
-            if (list.isEmpty()) {
-                return false;
-            } else {
-                this.targetEntity = (EntityLivingBase) list.get(0);
-                return true;
+            // Dbr (GENERAL UPDATE P2): sin los atacantes que el NPC dejo por lejos o por no llegar
+            CombatHandler combate = ((EntityNPCInterface) taskOwner).combatHandler;
+            for (Object o : list) {
+                if (!combate.estaFuera((EntityLivingBase) o)) {
+                    this.targetEntity = (EntityLivingBase) o;
+                    return true;
+                }
             }
+            return false;
         }
     }
 

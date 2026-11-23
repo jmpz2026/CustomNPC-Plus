@@ -6,11 +6,14 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.DamageSource;
 import noppes.npcs.NoppesUtilServer;
+import noppes.npcs.config.ConfigMain;
 import noppes.npcs.entity.EntityNPCInterface;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 public class CombatHandler {
 
@@ -19,6 +22,13 @@ public class CombatHandler {
     private EntityNPCInterface npc;
     private long startTime = 0;
     private int combatResetTimer = 0;
+    /**
+     * Dbr (GENERAL UPDATE P2): atacantes que el NPC dejo por lejos o por no poder llegar. Sus
+     * golpes no lo meten en combate (regenera con healthRegen) hasta que vuelva a tenerlos a tiro.
+     */
+    private final Map<EntityLivingBase, Boolean> fuera = new WeakHashMap<EntityLivingBase, Boolean>();
+    /** Ticks seguidos sin tener al objetivo a tiro. */
+    private int sinLlegar = 0;
 
     public CombatHandler(EntityNPCInterface npc) {
         this.npc = npc;
@@ -31,6 +41,7 @@ public class CombatHandler {
             }
             return;
         }
+        if (persigue()) vigilarPersecucion();
         if (npc.getAttackTarget() != null && !npc.isAttacking()) {
             start();
         }
@@ -52,8 +63,10 @@ public class CombatHandler {
     }
 
     public void damage(DamageSource source, float damageAmount) {
-        combatResetTimer = 0;
         Entity e = NoppesUtilServer.GetDamageSource(source);
+        // Dbr P2: el golpe de alguien que el NPC dejo no alarga el combate
+        if (!(e instanceof EntityLivingBase && estaFuera((EntityLivingBase) e)))
+            combatResetTimer = 0;
 
         if (e instanceof EntityLivingBase) {
             EntityLivingBase el = (EntityLivingBase) e;
@@ -115,7 +128,81 @@ public class CombatHandler {
         if (target instanceof EntityPlayer && (((EntityPlayer) target).capabilities.disableDamage || DBCAddon.instance.isKO(npc, (EntityPlayer) target)))
             return false;
 
-        return npc.isInRange(target, npc.stats.aggroRange);
+        if (estaFuera(target))
+            return false;
+        return npc.isInRange(target, rango(target));
+    }
+
+    // ------------------------------------------------------------ Dbr (GENERAL UPDATE P2)
+
+    /** Solo los NPC que se defienden (onAttack 0). Los pasivos y los 'quieto' de Universos (3) no. */
+    public boolean persigue() {
+        return ConfigMain.DbrPersecucion && npc.ais.onAttack == 0;
+    }
+
+    /**
+     * Distancia hasta la que el NPC sigue a un objetivo: a quien le pego, hasta NpcNavRange (32);
+     * a los demas, su aggroRange como siempre.
+     */
+    public double rango(EntityLivingBase target) {
+        if (target != null && persigue() && aggressors.containsKey(target))
+            return Math.max(npc.stats.aggroRange, ConfigMain.NpcNavRange);
+        return npc.stats.aggroRange;
+    }
+
+    /** El NPC dejo a este atacante: no lo vuelve a fijar hasta tenerlo a tiro. */
+    public boolean estaFuera(EntityLivingBase e) {
+        return e != null && fuera.containsKey(e);
+    }
+
+    /** Lo tiene a tiro: cuerpo a cuerpo con margen, o a distancia con proyectil y viendolo. */
+    public boolean aTiro(EntityLivingBase t) {
+        double d2 = npc.getDistanceSq(t.posX, t.boundingBox.minY, t.posZ);
+        double melee = npc.stats.attackRange * npc.stats.attackRange + t.width;
+        double minimo = npc.width * 2.0F * npc.width * 2.0F + t.width;
+        double alcance = Math.sqrt(Math.max(melee, minimo)) + 1.5;
+        if (d2 <= alcance * alcance)
+            return true;
+        if (npc.inventory.getProjectile() != null && npc.ais.useRangeMelee != 1) {
+            double r = npc.stats.rangedRange;
+            return d2 <= r * r && npc.canSee(t);
+        }
+        return false;
+    }
+
+    private void vigilarPersecucion() {
+        if (!fuera.isEmpty() && npc.ticksExisted % 20 == 0) {
+            Iterator<Map.Entry<EntityLivingBase, Boolean>> it = fuera.entrySet().iterator();
+            while (it.hasNext()) {
+                EntityLivingBase e = it.next().getKey();
+                // vuelve a contar si murio, se fue del mundo o el NPC lo tiene a tiro otra vez
+                if (e == null || !e.isEntityAlive() || e.worldObj != npc.worldObj
+                        || npc.getDistanceToEntity(e) <= ConfigMain.NpcNavRange && aTiro(e))
+                    it.remove();
+            }
+        }
+        EntityLivingBase t = npc.getAttackTarget();
+        if (t == null || !aggressors.containsKey(t)) {
+            sinLlegar = 0;
+            return;
+        }
+        if (npc.getDistanceToEntity(t) > ConfigMain.NpcNavRange) {
+            dejar(t);
+            return;
+        }
+        if (aTiro(t)) {
+            sinLlegar = 0;
+        } else if (++sinLlegar >= Math.max(1, ConfigMain.DbrSegundosSinLlegar) * 20) {
+            dejar(t);
+        }
+    }
+
+    /** Sale de combate con este atacante aunque le siga pegando: regenera con healthRegen. */
+    private void dejar(EntityLivingBase t) {
+        fuera.put(t, Boolean.TRUE);
+        sinLlegar = 0;
+        npc.setAttackTarget(null);
+        reset();
     }
 
     public float calculateThreatLevel(EntityLivingBase entity) {

@@ -55,7 +55,7 @@ public class EntityAIRangedAttack extends EntityAIBase {
             return false;
         }
 
-        if (entityHost.getDistanceToEntity(var1) > entityHost.stats.aggroRange) {
+        if (entityHost.getDistanceToEntity(var1) > entityHost.combatHandler.rango(var1)) {
             isShooting = false;
             return false;
         }
