@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ListaBardoTest {
 
     private static List<Entrada> villancicos() {
-        return Arrays.asList(new Entrada("dbrmusica:navidad_deseo", 121), new Entrada("dbrmusica:navidad_cascabel", 128),
-                new Entrada("dbrmusica:navidad_salon", 121), new Entrada("dbrmusica:navidad_noche", 126));
+        return Arrays.asList(new Entrada("dbrmusica:navidad_deseo", 70), new Entrada("dbrmusica:navidad_cascabel", 58),
+                new Entrada("dbrmusica:navidad_salon", 48), new Entrada("dbrmusica:navidad_noche", 69));
     }
 
     @Test
@@ -48,10 +48,10 @@ class ListaBardoTest {
         o.avanzar(0);
         assertEquals(0, o.indice());
         assertEquals(60_000, o.transcurridoMs(60_000));
-        assertFalse(o.avanzar(122_999));
-        assertTrue(o.avanzar(123_000));
+        assertFalse(o.avanzar(71_999));
+        assertTrue(o.avanzar(72_000));
         assertEquals(1, o.indice());
-        assertEquals(0, o.transcurridoMs(123_000));
+        assertEquals(0, o.transcurridoMs(72_000));
     }
 
     @Test
