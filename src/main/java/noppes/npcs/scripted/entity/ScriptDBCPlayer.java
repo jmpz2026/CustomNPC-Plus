@@ -405,12 +405,101 @@ public class ScriptDBCPlayer<T extends EntityPlayerMP> extends ScriptPlayer<T> i
         return player.getEntityData().getCompoundTag("PlayerPersisted").getInteger("jrmcEnrgy");
     }
 
+    /**
+     * DBR (DbrTpBanco): con el banco de TP, fija el total. Si el total pasa de Integer.MAX_VALUE,
+     * getTP devolvio el tope y setTP aplica la diferencia contra ese tope, asi
+     * {@code setTP(getTP() - coste)} cobra bien y no crea TP. Sin el mod, la billetera como antes.
+     */
     public void setTP(int tp) {
+        if (TpBancoPuente.hay()) {
+            long total = TpBancoPuente.total(player);
+            long nuevo = total > Integer.MAX_VALUE ? total + ((long) tp - Integer.MAX_VALUE) : tp;
+            TpBancoPuente.fijar(player, Math.max(0L, nuevo), "CNPC+ setTP");
+            return;
+        }
         player.getEntityData().getCompoundTag("PlayerPersisted").setInteger("jrmcTpint", tp);
     }
 
+    /** DBR: el total billetera + banco, topado a Integer.MAX_VALUE (getTPTotal da el long). */
     public int getTP() {
+        if (TpBancoPuente.hay()) return (int) Math.min(Integer.MAX_VALUE, TpBancoPuente.total(player));
         return player.getEntityData().getCompoundTag("PlayerPersisted").getInteger("jrmcTpint");
+    }
+
+    public long getTPTotal() {
+        if (TpBancoPuente.hay()) return TpBancoPuente.total(player);
+        return player.getEntityData().getCompoundTag("PlayerPersisted").getInteger("jrmcTpint");
+    }
+
+    public void addTP(long tp) {
+        if (tp <= 0) return;
+        if (TpBancoPuente.hay()) {
+            TpBancoPuente.dar(player, tp, "CNPC+ addTP");
+            return;
+        }
+        NBTTagCompound n = player.getEntityData().getCompoundTag("PlayerPersisted");
+        n.setInteger("jrmcTpint", (int) Math.min(2000000000L, (long) n.getInteger("jrmcTpint") + tp));
+    }
+
+    public boolean takeTP(long tp) {
+        if (tp < 0) return false;
+        if (TpBancoPuente.hay()) return TpBancoPuente.quitar(player, tp, "CNPC+ takeTP");
+        NBTTagCompound n = player.getEntityData().getCompoundTag("PlayerPersisted");
+        int actual = n.getInteger("jrmcTpint");
+        if (actual < tp) return false;
+        n.setInteger("jrmcTpint", (int) (actual - tp));
+        return true;
+    }
+
+    /** Puente por reflexion a dbr.machitos.tpbanco.api.TpBancoApi (DbrServerPack). */
+    private static final class TpBancoPuente {
+        private static boolean buscado;
+        private static java.lang.reflect.Method total, dar, quitar, fijar;
+
+        static boolean hay() {
+            if (!buscado) {
+                buscado = true;
+                try {
+                    Class<?> c = Class.forName("dbr.machitos.tpbanco.api.TpBancoApi");
+                    Class<?> ep = net.minecraft.entity.player.EntityPlayer.class;
+                    total = c.getMethod("total", ep);
+                    dar = c.getMethod("dar", ep, long.class, String.class);
+                    quitar = c.getMethod("quitar", ep, long.class, String.class);
+                    fijar = c.getMethod("fijar", ep, long.class, String.class);
+                } catch (Throwable e) {
+                    total = null;
+                }
+            }
+            return total != null;
+        }
+
+        static long total(EntityPlayerMP p) {
+            return (Long) llamar(total, p);
+        }
+
+        static void dar(EntityPlayerMP p, long n, String motivo) {
+            llamar(dar, p, n, motivo);
+        }
+
+        static boolean quitar(EntityPlayerMP p, long n, String motivo) {
+            return (Boolean) llamar(quitar, p, n, motivo);
+        }
+
+        static void fijar(EntityPlayerMP p, long n, String motivo) {
+            llamar(fijar, p, n, motivo);
+        }
+
+        private static Object llamar(java.lang.reflect.Method m, Object... args) {
+            try {
+                return m.invoke(null, args);
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                Throwable c = e.getCause();
+                if (c instanceof RuntimeException) throw (RuntimeException) c;
+                throw new RuntimeException(c);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public void setGravity(float gravity) {
