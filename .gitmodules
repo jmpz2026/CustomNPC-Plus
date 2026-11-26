@@ -1,4 +1,4 @@
 [submodule "src/api"]
 	path = src/api
-	url = https://github.com/KAMKEEL/CustomNPC-Plus-API.git
-	branch = dev
+	url = https://github.com/jmpz2026/CustomNPC-Plus-API.git
+	branch = fork-1.10.4
